@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/mchetelat/bazo_client/REST"
-	"github.com/mchetelat/bazo_client/client"
+	"github.com/bazo-blockchain/bazo-client/REST"
+	"github.com/bazo-blockchain/bazo-client/client"
 	"os"
 )
 

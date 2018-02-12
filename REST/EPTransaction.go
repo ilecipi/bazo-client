@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
-	"github.com/mchetelat/bazo_client/client"
+	"github.com/bazo-blockchain/bazo-client/client"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"math/big"

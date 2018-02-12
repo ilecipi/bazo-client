@@ -3,7 +3,7 @@ package REST
 import (
 	"encoding/json"
 	"github.com/gorilla/mux"
-	"github.com/mchetelat/bazo_client/client"
+	"github.com/bazo-blockchain/bazo-client/client"
 	"math/big"
 	"net/http"
 )

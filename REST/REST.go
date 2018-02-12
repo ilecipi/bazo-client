@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"github.com/mchetelat/bazo_client/client"
+	"github.com/bazo-blockchain/bazo-client/client"
 )
 
 var (
