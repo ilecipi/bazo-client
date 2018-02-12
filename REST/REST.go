@@ -18,7 +18,7 @@ func Init() {
 
 	client.InitState()
 
-	logger.Printf("\n%v\n\n", "Starting REST...")
+	logger.Printf("%v\n\n", "Starting REST...")
 
 	router := mux.NewRouter()
 	getEndpoints(router)
