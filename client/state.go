@@ -1,7 +1,6 @@
 package client
 
 import (
-	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/miner"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
@@ -10,7 +9,7 @@ import (
 
 var (
 	//All blockheaders of the whole chain
-	allBlockHeaders []*protocol.Block
+	allBlockHeaders  []*protocol.Block
 	activeParameters miner.Parameters
 	UnsignedAccTx    = make(map[[32]byte]*protocol.AccTx)
 	UnsignedConfigTx = make(map[[32]byte]*protocol.ConfigTx)
@@ -49,7 +48,16 @@ func getNewBlockHeaders(latest *protocol.Block, eldest *protocol.Block, list []*
 		ancestor := reqBlockHeader(latest.PrevHash[:])
 		list = getNewBlockHeaders(ancestor, eldest, list)
 		list = append(list, latest)
-		fmt.Printf("2: Loaded header: %x, NrFundsTx: %v\n", latest.Hash, latest.NrFundsTx)
+		logger.Printf("Header: %x loaded\n"+
+			"NrFundsTx: %v\n"+
+			"NrAccTx: %v\n"+
+			"NrConfigTx: %v\n"+
+			"NrStakeTx: %v\n",
+			latest.Hash[0:8],
+			latest.NrFundsTx,
+			latest.NrAccTx,
+			latest.NrConfigTx,
+			latest.NrConfigTx)
 	}
 
 	return list
