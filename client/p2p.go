@@ -109,6 +109,27 @@ func reqBlockHeader(blockHash []byte) (blockHeader *protocol.Block) {
 	return blockHeader
 }
 
+func ReqAcc(accountHash [32]byte) (acc *protocol.Account) {
+	conn := Connect(p2p.BOOTSTRAP_SERVER)
+
+	packet := p2p.BuildPacket(p2p.ACC_REQ, accountHash[:])
+	conn.Write(packet)
+
+	header, payload, err := rcvData(conn)
+	if err != nil {
+		logger.Printf("Disconnected: %v\n", err)
+		return nil
+	}
+
+	if header.TypeID == p2p.ACC_RES {
+		acc = acc.Decode(payload)
+	}
+
+	conn.Close()
+
+	return acc
+}
+
 //Check if our address is the initial root account, since for it no accTx exists
 func reqRootAcc(accountHash [32]byte) (rootAcc *protocol.Account) {
 	conn := Connect(p2p.BOOTSTRAP_SERVER)
