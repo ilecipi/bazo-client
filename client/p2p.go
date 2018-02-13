@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"net"
 )
 
 func reqBlock(blockHash [32]byte) (block *protocol.Block) {
@@ -152,12 +153,15 @@ func reqRootAcc(accountHash [32]byte) (rootAcc *protocol.Account) {
 	return rootAcc
 }
 
-func SendTx(tx protocol.Transaction, typeID uint8) (err error) {
+func SendTx(dial string, tx protocol.Transaction, typeID uint8) (err error) {
+	var conn net.Conn
+
 	//Transaction creation successful
 	packet := p2p.BuildPacket(typeID, tx.Encode())
 
 	//Open a connection
-	conn := Connect(p2p.BOOTSTRAP_SERVER)
+	conn = Connect(dial)
+
 	conn.Write(packet)
 
 	header, _, err := rcvData(conn)
