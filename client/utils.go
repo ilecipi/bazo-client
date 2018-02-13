@@ -103,7 +103,7 @@ func getKeys(keyFile string) (myPubKey [64]byte, myPubKeyHash [32]byte, err erro
 	return myPubKey, myPubKeyHash, err
 }
 
-func rcvData(c net.Conn) (header *p2p.Header, payload []byte, err error) {
+func RcvData(c net.Conn) (header *p2p.Header, payload []byte, err error) {
 	reader := bufio.NewReader(c)
 	header, err = p2p.ReadHeader(reader)
 	if err != nil {

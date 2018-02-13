@@ -15,7 +15,7 @@ func reqBlock(blockHash [32]byte) (block *protocol.Block) {
 	packet := p2p.BuildPacket(p2p.BLOCK_REQ, blockHash[:])
 	conn.Write(packet)
 
-	header, payload, err := rcvData(conn)
+	header, payload, err := RcvData(conn)
 	if err != nil {
 		logger.Printf("Disconnected: %v\n", err)
 		return
@@ -37,7 +37,7 @@ func reqTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
 	packet := p2p.BuildPacket(txType, txHash[:])
 	conn.Write(packet)
 
-	header, payload, err := rcvData(conn)
+	header, payload, err := RcvData(conn)
 	if err != nil {
 		logger.Printf("Disconnected: %v\n", err)
 		return
@@ -73,7 +73,7 @@ func reqIntermediateNodes(blockHash [32]byte, txHash [32]byte) (nodes [][32]byte
 	packet := p2p.BuildPacket(p2p.INTERMEDIATE_NODES_REQ, protocol.SerializeSlice32([][32]byte{blockHash, txHash}))
 	conn.Write(packet)
 
-	header, payload, err := rcvData(conn)
+	header, payload, err := RcvData(conn)
 	if err != nil {
 		logger.Printf("Disconnected: %v\n", err)
 		return
@@ -95,7 +95,7 @@ func reqBlockHeader(blockHash []byte) (blockHeader *protocol.Block) {
 	packet := p2p.BuildPacket(p2p.BLOCK_HEADER_REQ, blockHash)
 	conn.Write(packet)
 
-	header, payload, err := rcvData(conn)
+	header, payload, err := RcvData(conn)
 	if err != nil {
 		logger.Printf("Disconnected: %v\n", err)
 		return
@@ -116,7 +116,7 @@ func ReqAcc(accountHash [32]byte) (acc *protocol.Account) {
 	packet := p2p.BuildPacket(p2p.ACC_REQ, accountHash[:])
 	conn.Write(packet)
 
-	header, payload, err := rcvData(conn)
+	header, payload, err := RcvData(conn)
 	if err != nil {
 		logger.Printf("Disconnected: %v\n", err)
 		return nil
@@ -138,7 +138,7 @@ func reqRootAcc(accountHash [32]byte) (rootAcc *protocol.Account) {
 	packet := p2p.BuildPacket(p2p.ROOTACC_REQ, accountHash[:])
 	conn.Write(packet)
 
-	header, payload, err := rcvData(conn)
+	header, payload, err := RcvData(conn)
 	if err != nil {
 		logger.Printf("Disconnected: %v\n", err)
 		return nil
@@ -164,7 +164,7 @@ func SendTx(dial string, tx protocol.Transaction, typeID uint8) (err error) {
 
 	conn.Write(packet)
 
-	header, _, err := rcvData(conn)
+	header, _, err := RcvData(conn)
 	if header.TypeID != p2p.TX_BRDCST_ACK || err != nil {
 		err = errors.New(fmt.Sprintf("%v\nCould not send the following transaction: %x", err, tx.Hash()))
 	}
