@@ -110,7 +110,7 @@ func reqBlockHeader(blockHash []byte) (blockHeader *protocol.Block) {
 }
 
 //Check if our address is the initial root account, since for it no accTx exists
-func reqRootAccFromHash(accountHash [32]byte) (rootAcc *protocol.Account) {
+func reqRootAcc(accountHash [32]byte) (rootAcc *protocol.Account) {
 	conn := Connect(p2p.BOOTSTRAP_SERVER)
 
 	packet := p2p.BuildPacket(p2p.ROOTACC_REQ, accountHash[:])

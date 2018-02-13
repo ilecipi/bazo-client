@@ -25,13 +25,20 @@ func GetAccount(pubKey [64]byte) (*Account, error) {
 	activeParameters = miner.NewDefaultParameters()
 
 	//If Acc is Root in the bazo network state, we do not check for accTx, else we check
-	if rootAcc := reqRootAccFromHash(protocol.SerializeHashContent(acc.Address)); rootAcc != nil {
-		acc.IsCreated, acc.IsRoot = true, true
+	if rootAcc := reqRootAcc(protocol.SerializeHashContent(acc.Address)); rootAcc != nil {
+		acc.IsRoot = true
 	}
 
 	err = getState(&acc)
 	if err != nil {
 		return &acc, errors.New(fmt.Sprintf("Could not calculate state of account %x: %v\n", acc.Address[:8], err))
+	}
+
+	//No accTx exists for this account since it is the initial root account
+	//Add the initial root's balance
+	if acc.IsCreated == false && acc.IsRoot == true {
+		acc.IsCreated = true
+		acc.Balance += miner.INITIALINITROOTBALANCE
 	}
 
 	if acc.IsCreated == false {
