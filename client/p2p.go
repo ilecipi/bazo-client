@@ -8,6 +8,11 @@ import (
 	"net"
 )
 
+const (
+	MULTISIG_SERVER      = p2p.BOOTSTRAP_SERVER + MULTISIG_SERVER_PORT
+	MULTISIG_SERVER_PORT = "8002"
+)
+
 func reqBlock(blockHash [32]byte) (block *protocol.Block) {
 
 	conn := Connect(p2p.BOOTSTRAP_SERVER)

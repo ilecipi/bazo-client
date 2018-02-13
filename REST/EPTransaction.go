@@ -156,7 +156,7 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 		if tx := client.UnsignedFundsTx[txHash]; tx != nil {
 			if tx.Sig1 == [64]byte{} {
 				tx.Sig1 = txSign
-				err = client.SendTx("127.0.0.1:8002", tx, p2p.FUNDSTX_BRDCST)
+				err = client.SendTx(client.MULTISIG_SERVER, tx, p2p.FUNDSTX_BRDCST)
 			} else {
 				tx.Sig2 = txSign
 				err = client.SendTx(p2p.BOOTSTRAP_SERVER, tx, p2p.FUNDSTX_BRDCST)
