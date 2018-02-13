@@ -7,10 +7,10 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"github.com/bazo-blockchain/bazo-client/client"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/gorilla/mux"
 	"math/big"
 	"net/http"
 	"strconv"
@@ -85,10 +85,9 @@ func CreateConfigTxEndpoint(w http.ResponseWriter, req *http.Request) {
 func CreateFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
 
-	var fromPub [64]byte
-	var toPub [64]byte
+	var fromPub, toPub [64]byte
 
-	header, _ := strconv.Atoi(params["header"])
+	header := []byte(params["header"])
 	amount, _ := strconv.Atoi(params["amount"])
 	fee, _ := strconv.Atoi(params["fee"])
 	txCnt, _ := strconv.Atoi(params["txCnt"])
@@ -100,7 +99,7 @@ func CreateFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	copy(toPub[:], toPubInt.Bytes())
 
 	tx := protocol.FundsTx{
-		Header: byte(header),
+		Header: header[0],
 		Amount: uint64(amount),
 		Fee:    uint64(fee),
 		TxCnt:  uint32(txCnt),
@@ -124,6 +123,7 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 
 	txHashInt, _ := new(big.Int).SetString(params["txHash"], 16)
 	copy(txHash[:], txHashInt.Bytes())
+
 	txSignInt, _ := new(big.Int).SetString(params["txSign"], 16)
 	copy(txSign[:], txSignInt.Bytes())
 
@@ -133,31 +133,41 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 	case p2p.ACCTX_BRDCST:
 		if tx := client.UnsignedAccTx[txHash]; tx != nil {
 			tx.Sig = txSign
-			if err = client.SendTx(tx, p2p.ACCTX_BRDCST); err != nil {
-				delete(client.UnsignedAccTx, txHash)
-			}
+			err = client.SendTx(p2p.BOOTSTRAP_SERVER, tx, p2p.ACCTX_BRDCST)
+
+			//If tx was successful or not, delete it from map either way. A new tx creation is the only option to repeat.
+			delete(client.UnsignedFundsTx, txHash)
 		} else {
-			sendJsonResponse(w, JsonResponse{500, fmt.Sprintf("No transaction with hash %x found to sign", txHash), nil})
+			sendJsonResponse(w, JsonResponse{500, fmt.Sprintf("No transaction with hash %x found to sign.", txHash), nil})
 			return
 		}
 	case p2p.CONFIGTX_BRDCST:
 		if tx := client.UnsignedConfigTx[txHash]; tx != nil {
 			tx.Sig = txSign
-			if err = client.SendTx(tx, p2p.CONFIGTX_BRDCST); err != nil {
-				delete(client.UnsignedConfigTx, txHash)
-			}
+			err = client.SendTx(p2p.BOOTSTRAP_SERVER, tx, p2p.CONFIGTX_BRDCST)
+
+			//If tx was successful or not, delete it from map either way. A new tx creation is the only option to repeat.
+			delete(client.UnsignedFundsTx, txHash)
 		} else {
-			sendJsonResponse(w, JsonResponse{500, fmt.Sprintf("No transaction with hash %x found to sign", txHash), nil})
+			sendJsonResponse(w, JsonResponse{500, fmt.Sprintf("No transaction with hash %x found to sign.", txHash), nil})
 			return
 		}
 	case p2p.FUNDSTX_BRDCST:
 		if tx := client.UnsignedFundsTx[txHash]; tx != nil {
-			tx.Sig = txSign
-			if err = client.SendTx(tx, p2p.FUNDSTX_BRDCST); err != nil {
+			if tx.Sig1 == [64]byte{} {
+				tx.Sig1 = txSign
+				err = client.SendTx("127.0.0.1:8002", tx, p2p.FUNDSTX_BRDCST)
+			} else {
+				tx.Sig2 = txSign
+				err = client.SendTx(p2p.BOOTSTRAP_SERVER, tx, p2p.FUNDSTX_BRDCST)
+			}
+
+			//If tx was successful or not, delete it from map either way. A new tx creation is the only option to repeat.
+			if tx.Sig2 != [64]byte{} {
 				delete(client.UnsignedFundsTx, txHash)
 			}
 		} else {
-			sendJsonResponse(w, JsonResponse{500, fmt.Sprintf("No transaction with hash %x found to sign", txHash), nil})
+			sendJsonResponse(w, JsonResponse{500, fmt.Sprintf("No transaction with hash %x found to sign.", txHash), nil})
 			return
 		}
 	}

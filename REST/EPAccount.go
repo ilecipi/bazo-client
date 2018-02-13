@@ -2,8 +2,8 @@ package REST
 
 import (
 	"encoding/json"
-	"github.com/gorilla/mux"
 	"github.com/bazo-blockchain/bazo-client/client"
+	"github.com/gorilla/mux"
 	"math/big"
 	"net/http"
 )
@@ -12,8 +12,17 @@ func GetAccountEndpoint(w http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
 
 	var pubKey [64]byte
-	pubKeyInt, _ := new(big.Int).SetString(params["id"], 16)
-	copy(pubKey[:], pubKeyInt.Bytes())
+	var pubKeyHash [32]byte
+
+	idInt, _ := new(big.Int).SetString(params["id"], 16)
+
+	if len(params["id"]) == 64 {
+		copy(pubKeyHash[:], idInt.Bytes())
+		acc := client.ReqAcc(pubKeyHash)
+		pubKey = acc.Address
+	} else if len(params["id"]) == 128 {
+		copy(pubKey[:], idInt.Bytes())
+	}
 
 	acc, err := client.GetAccount(pubKey)
 	if err != nil {
