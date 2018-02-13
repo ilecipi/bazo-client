@@ -5,11 +5,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 	"math/big"
 	"os"
 	"strconv"
 	"strings"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 const (
@@ -223,8 +223,8 @@ func parseStakeTx(args []string) (protocol.Transaction, error) {
 	stakeTxUsage := "\nUsage: bazo_client stakeTx <header> <fee> <isStaking> <account> <privKey>"
 
 	var (
-		accountPubKey 	[64]byte
-		hashedSeed		[32]byte
+		accountPubKey [64]byte
+		hashedSeed    [32]byte
 	)
 
 	if len(args) != 5 {
@@ -250,7 +250,7 @@ func parseStakeTx(args []string) (protocol.Transaction, error) {
 	//create new seed if node wants to stake
 	//seed file cannot be simply overwritten since in case of a rollback
 	//the validator must also be able to access an old seed
-	if isStaking != 0{
+	if isStaking != 0 {
 		//generate random seed and store it
 		seed := protocol.CreateRandomSeed()
 
@@ -288,7 +288,6 @@ func parseStakeTx(args []string) (protocol.Transaction, error) {
 
 	//logger.Println("\n Pubkey from ParseStakeTx: ", accountPubKey[:])
 	//logger.Println("\nHashed Pubkey from ParseStakeTx: ", SerializeHashContent(accountPubKey[:]))
-
 
 	tx, err := protocol.ConstrStakeTx(
 		byte(header),
