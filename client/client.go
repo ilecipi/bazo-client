@@ -69,7 +69,7 @@ func Process(args []string) {
 		return
 	}
 
-	if err := SendTx(tx, msgType); err != nil {
+	if err := SendTx(p2p.BOOTSTRAP_SERVER, tx, msgType); err != nil {
 		logger.Printf("%v\n", err)
 	} else {
 		logger.Printf("Successfully sent the following tansaction:%v", tx)

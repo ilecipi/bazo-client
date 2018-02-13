@@ -133,7 +133,7 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 	case p2p.ACCTX_BRDCST:
 		if tx := client.UnsignedAccTx[txHash]; tx != nil {
 			tx.Sig = txSign
-			if err = client.SendTx(tx, p2p.ACCTX_BRDCST); err != nil {
+			if err = client.SendTx(p2p.BOOTSTRAP_SERVER, tx, p2p.ACCTX_BRDCST); err != nil {
 				delete(client.UnsignedAccTx, txHash)
 			}
 		} else {
@@ -143,7 +143,7 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 	case p2p.CONFIGTX_BRDCST:
 		if tx := client.UnsignedConfigTx[txHash]; tx != nil {
 			tx.Sig = txSign
-			if err = client.SendTx(tx, p2p.CONFIGTX_BRDCST); err != nil {
+			if err = client.SendTx(p2p.BOOTSTRAP_SERVER, tx, p2p.CONFIGTX_BRDCST); err != nil {
 				delete(client.UnsignedConfigTx, txHash)
 			}
 		} else {
@@ -153,7 +153,7 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 	case p2p.FUNDSTX_BRDCST:
 		if tx := client.UnsignedFundsTx[txHash]; tx != nil {
 			tx.Sig = txSign
-			if err = client.SendTx(tx, p2p.FUNDSTX_BRDCST); err != nil {
+			if err = client.SendTx(p2p.BOOTSTRAP_SERVER, tx, p2p.FUNDSTX_BRDCST); err != nil {
 				delete(client.UnsignedFundsTx, txHash)
 			}
 		} else {
