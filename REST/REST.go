@@ -1,12 +1,12 @@
 package REST
 
 import (
+	"github.com/bazo-blockchain/bazo-client/client"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
 	"os"
-	"github.com/bazo-blockchain/bazo-client/client"
 )
 
 var (
@@ -22,7 +22,7 @@ func Init() {
 
 	router := mux.NewRouter()
 	getEndpoints(router)
-	log.Fatal(http.ListenAndServe(":8001", handlers.CORS()(router)))
+	log.Fatal(http.ListenAndServe(client.LIGHT_CLIENT_SERVER_PORT, handlers.CORS()(router)))
 }
 
 func getEndpoints(router *mux.Router) {

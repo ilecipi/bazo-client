@@ -5,8 +5,15 @@ import (
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 	"net"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+)
+
+const (
+	LIGHT_CLIENT_SERVER_PORT = ":8001"
+	MULTISIG_SERVER          = storage.BOOTSTRAP_SERVER + MULTISIG_SERVER_PORT
+	MULTISIG_SERVER_PORT     = ":8002"
 )
 
 func reqBlock(blockHash [32]byte) (block *protocol.Block) {
@@ -132,7 +139,6 @@ func ReqAcc(accountHash [32]byte) (acc *protocol.Account) {
 	return acc
 }
 
-//Check if our address is the initial root account, since for it no accTx exists
 func reqRootAcc(accountHash [32]byte) (rootAcc *protocol.Account) {
 	conn := Connect(storage.BOOTSTRAP_SERVER)
 
