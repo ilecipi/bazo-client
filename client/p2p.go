@@ -6,11 +6,12 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"net"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 func reqBlock(blockHash [32]byte) (block *protocol.Block) {
 
-	conn := Connect(p2p.BOOTSTRAP_SERVER)
+	conn := Connect(storage.BOOTSTRAP_SERVER)
 
 	packet := p2p.BuildPacket(p2p.BLOCK_REQ, blockHash[:])
 	conn.Write(packet)
@@ -32,7 +33,7 @@ func reqBlock(blockHash [32]byte) (block *protocol.Block) {
 
 func reqTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
 
-	conn := Connect(p2p.BOOTSTRAP_SERVER)
+	conn := Connect(storage.BOOTSTRAP_SERVER)
 
 	packet := p2p.BuildPacket(txType, txHash[:])
 	conn.Write(packet)
@@ -68,7 +69,7 @@ func reqTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
 }
 
 func reqIntermediateNodes(blockHash [32]byte, txHash [32]byte) (nodes [][32]byte) {
-	conn := Connect(p2p.BOOTSTRAP_SERVER)
+	conn := Connect(storage.BOOTSTRAP_SERVER)
 
 	packet := p2p.BuildPacket(p2p.INTERMEDIATE_NODES_REQ, protocol.SerializeSlice32([][32]byte{blockHash, txHash}))
 	conn.Write(packet)
@@ -90,7 +91,7 @@ func reqIntermediateNodes(blockHash [32]byte, txHash [32]byte) (nodes [][32]byte
 
 //Request blockheader from network
 func reqBlockHeader(blockHash []byte) (blockHeader *protocol.Block) {
-	conn := Connect(p2p.BOOTSTRAP_SERVER)
+	conn := Connect(storage.BOOTSTRAP_SERVER)
 
 	packet := p2p.BuildPacket(p2p.BLOCK_HEADER_REQ, blockHash)
 	conn.Write(packet)
@@ -111,7 +112,7 @@ func reqBlockHeader(blockHash []byte) (blockHeader *protocol.Block) {
 }
 
 func ReqAcc(accountHash [32]byte) (acc *protocol.Account) {
-	conn := Connect(p2p.BOOTSTRAP_SERVER)
+	conn := Connect(storage.BOOTSTRAP_SERVER)
 
 	packet := p2p.BuildPacket(p2p.ACC_REQ, accountHash[:])
 	conn.Write(packet)
@@ -133,7 +134,7 @@ func ReqAcc(accountHash [32]byte) (acc *protocol.Account) {
 
 //Check if our address is the initial root account, since for it no accTx exists
 func reqRootAcc(accountHash [32]byte) (rootAcc *protocol.Account) {
-	conn := Connect(p2p.BOOTSTRAP_SERVER)
+	conn := Connect(storage.BOOTSTRAP_SERVER)
 
 	packet := p2p.BuildPacket(p2p.ROOTACC_REQ, accountHash[:])
 	conn.Write(packet)
