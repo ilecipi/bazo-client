@@ -17,9 +17,9 @@ type Account struct {
 	IsRoot        bool     `json:"isRoot"`
 }
 
-func GetAccount(pubKey [64]byte) (*Account, error) {
+func GetAccount(address [64]byte) (*Account, error) {
 	//Initialize new account with empty address
-	acc := Account{pubKey, hex.EncodeToString(pubKey[:]), 0, 0, false, false}
+	acc := Account{address, hex.EncodeToString(address[:]), 0, 0, false, false}
 
 	//Set default params
 	activeParameters = miner.NewDefaultParameters()

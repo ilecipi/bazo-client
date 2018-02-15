@@ -14,7 +14,7 @@ const (
 	LIGHT_CLIENT_SERVER_PORT = ":8001"
 	LIGHT_CLIENT_SERVER      = LIGHT_CLIENT_SERVER_IP + LIGHT_CLIENT_SERVER_PORT
 
-	MULTISIG_SERVER_IP   = storage.BOOTSTRAP_SERVER
+	MULTISIG_SERVER_IP   = storage.BOOTSTRAP_SERVER_IP
 	MULTISIG_SERVER_PORT = ":8002"
 	MULTISIG_SERVER      = MULTISIG_SERVER_IP + MULTISIG_SERVER_PORT
 )
@@ -99,7 +99,6 @@ func reqIntermediateNodes(blockHash [32]byte, txHash [32]byte) (nodes [][32]byte
 	return nil
 }
 
-//Request blockheader from network
 func reqBlockHeader(blockHash []byte) (blockHeader *protocol.Block) {
 	conn := Connect(storage.BOOTSTRAP_SERVER)
 

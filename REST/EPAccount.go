@@ -11,11 +11,21 @@ import (
 func GetAccountEndpoint(w http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
 
-	var pubKey [64]byte
-	pubKeyInt, _ := new(big.Int).SetString(params["id"], 16)
-	copy(pubKey[:], pubKeyInt.Bytes())
+	param := params["id"]
+	var address [64]byte
+	var addressHash [32]byte
 
-	acc, err := client.GetAccount(pubKey)
+	pubKeyInt, _ := new(big.Int).SetString(params["id"], 16)
+
+	if len(param) == 64 {
+		copy(addressHash[:], pubKeyInt.Bytes())
+		acc := client.ReqAcc(addressHash)
+		address = acc.Address
+	} else if len(param) == 128 {
+		copy(address[:], pubKeyInt.Bytes())
+	}
+
+	acc, err := client.GetAccount(address)
 	if err != nil {
 		js, err := json.Marshal(err.Error())
 		if err != nil {
