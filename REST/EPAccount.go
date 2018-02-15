@@ -15,7 +15,7 @@ func GetAccountEndpoint(w http.ResponseWriter, req *http.Request) {
 	var address [64]byte
 	var addressHash [32]byte
 
-	pubKeyInt, _ := new(big.Int).SetString(params["id"], 16)
+	pubKeyInt, _ := new(big.Int).SetString(param, 16)
 
 	if len(param) == 64 {
 		copy(addressHash[:], pubKeyInt.Bytes())
