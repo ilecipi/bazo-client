@@ -16,7 +16,7 @@ var (
 )
 
 const (
-	USAGE_MSG = "Usage: bazo_client [pubKey|accTx|fundsTx|configTx|stakeTx] ...\n"
+	USAGE_MSG = "Usage: bazo-client [pubKey|accTx|fundsTx|configTx|stakeTx] ...\n"
 )
 
 func Init() {
@@ -24,21 +24,19 @@ func Init() {
 }
 
 func State(keyFile string) {
-	InitState()
-	pubKeyTmp, _, err := storage.ExtractKeyFromFile(keyFile)
-
+	pubKey, _, err := storage.ExtractKeyFromFile(keyFile)
 	if err != nil {
 		logger.Printf("%v\n%v", err, USAGE_MSG)
 		return
 	}
 
-	var pubKey [64]byte
-	copy(pubKey[:32], pubKeyTmp.X.Bytes())
-	copy(pubKey[32:], pubKeyTmp.Y.Bytes())
+	InitState()
 
-	logger.Printf("My address: %x\n", pubKey)
+	accAddress := storage.GetAddressFromPubKey(&pubKey)
 
-	acc, err := GetAccount(pubKey)
+	logger.Printf("My address: %x\n", accAddress)
+
+	acc, err := GetAccount(accAddress)
 	if err != nil {
 		logger.Println(err)
 	} else {
@@ -60,11 +58,7 @@ func Process(args []string) {
 	case "stakeTx":
 		tx, err = parseStakeTx(os.Args[2:])
 		msgType = p2p.STAKETX_BRDCST
-	default:
-		logger.Printf("%s", USAGE_MSG)
-		return
 	}
-
 	if err != nil {
 		logger.Printf("%v\n", err)
 		return

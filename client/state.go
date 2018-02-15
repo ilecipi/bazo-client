@@ -53,7 +53,7 @@ func getNewBlockHeaders(latest *protocol.Block, eldest *protocol.Block, list []*
 			"NrAccTx: %v\n"+
 			"NrConfigTx: %v\n"+
 			"NrStakeTx: %v\n",
-			latest.Hash[0:8],
+			latest.Hash[:8],
 			latest.NrFundsTx,
 			latest.NrAccTx,
 			latest.NrConfigTx,
@@ -73,10 +73,7 @@ func getState(acc *Account) error {
 	//* received funds
 	//* is beneficiary
 	//* nr of configTx in block is > 0 (in order to maintain params in light-client)
-	relevantBlocks, err := getRelevantBlocks(acc.Address)
-	if err != nil {
-		return err
-	}
+	relevantBlocks := getRelevantBlocks(acc.Address)
 
 	for _, block := range relevantBlocks {
 		//Collect block reward
@@ -154,13 +151,13 @@ func getState(acc *Account) error {
 	return nil
 }
 
-func getRelevantBlocks(pubKey [64]byte) (relevantBlocks []*protocol.Block, err error) {
+func getRelevantBlocks(pubKey [64]byte) (relevantBlocks []*protocol.Block) {
 	for _, blockHash := range getRelevantBlockHashes(pubKey) {
 		block := reqBlock(blockHash)
 		relevantBlocks = append(relevantBlocks, block)
 	}
 
-	return relevantBlocks, nil
+	return relevantBlocks
 }
 
 func getRelevantBlockHashes(pubKey [64]byte) (relevantBlockHashes [][32]byte) {
@@ -168,7 +165,7 @@ func getRelevantBlockHashes(pubKey [64]byte) (relevantBlockHashes [][32]byte) {
 	for _, blockHeader := range allBlockHeaders {
 		//Block is relevant if:
 		//account is beneficary or
-		//account is in bloomfilter (all addresses involved in fundstx) or
+		//account is in bloomfilter (all addresses involved in acctx/fundstx) or
 		//config state changed
 		if blockHeader.Beneficiary == pubKeyHash || blockHeader.NrConfigTx > 0 || (blockHeader.NrElementsBF > 0 && blockHeader.BloomFilter.Test(pubKeyHash[:])) {
 			relevantBlockHashes = append(relevantBlockHashes, blockHeader.Hash)

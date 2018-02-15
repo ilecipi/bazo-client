@@ -200,7 +200,7 @@ func parseStakeTx(args []string) (protocol.Transaction, error) {
 		seed := protocol.CreateRandomSeed()
 
 		//create the hash of the seed which will be included in the transaction
-		hashedSeed = SerializeHashContent(seed)
+		hashedSeed = protocol.SerializeHashContent(seed)
 
 		storage.AppendNewSeed(storage.SEED_FILE_NAME, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
 
@@ -239,7 +239,7 @@ func parseStakeTx(args []string) (protocol.Transaction, error) {
 		uint64(fee),
 		isStaking != 0,
 		hashedSeed,
-		SerializeHashContent(accountPubKey[:]),
+		protocol.SerializeHashContent(accountPubKey[:]),
 		&privKey,
 	)
 
