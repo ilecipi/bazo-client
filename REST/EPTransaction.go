@@ -10,11 +10,11 @@ import (
 	"github.com/bazo-blockchain/bazo-client/client"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 	"github.com/gorilla/mux"
 	"math/big"
 	"net/http"
 	"strconv"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 type JsonResponse struct {

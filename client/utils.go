@@ -3,8 +3,6 @@ package client
 import (
 	"bufio"
 	"bytes"
-	"crypto/ecdsa"
-	"crypto/elliptic"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -29,49 +27,6 @@ func Connect(connectionString string) *net.TCPConn {
 	conn.SetDeadline(time.Now().Add(20 * time.Second))
 
 	return conn
-}
-
-func ExtractKeyFromFile(filename string) (pubKey ecdsa.PublicKey, privKey ecdsa.PrivateKey, err error) {
-
-	filehandle, err := os.Open(filename)
-	if err != nil {
-		return pubKey, privKey, errors.New(fmt.Sprintf("%v", err))
-	}
-
-	reader := bufio.NewReader(filehandle)
-
-	//Public Key
-	pub1, err := reader.ReadString('\n')
-	pub2, err2 := reader.ReadString('\n')
-	//Private Key
-	priv, err3 := reader.ReadString('\n')
-	if err != nil || err2 != nil {
-		return pubKey, privKey, errors.New(fmt.Sprintf("Could not read key from file: %v", err))
-	}
-
-	pub1Int, b := new(big.Int).SetString(strings.Split(pub1, "\n")[0], 16)
-	pub2Int, b2 := new(big.Int).SetString(strings.Split(pub2, "\n")[0], 16)
-
-	pubKey = ecdsa.PublicKey{
-		elliptic.P256(),
-		pub1Int,
-		pub2Int,
-	}
-
-	//File consists of public & private key
-	if err3 == nil {
-		privInt, b3 := new(big.Int).SetString(strings.Split(priv, "\n")[0], 16)
-		if !b || !b2 || !b3 {
-			return pubKey, privKey, errors.New("Failed to convert the key strings to big.Int.")
-		}
-
-		privKey = ecdsa.PrivateKey{
-			pubKey,
-			privInt,
-		}
-	}
-
-	return pubKey, privKey, nil
 }
 
 func SerializeHashContent(data interface{}) (hash [32]byte) {

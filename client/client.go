@@ -3,9 +3,9 @@ package client
 import (
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 	"log"
 	"os"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 var (
@@ -25,7 +25,7 @@ func Init() {
 
 func State(keyFile string) {
 	InitState()
-	pubKeyTmp, _, err := ExtractKeyFromFile(keyFile)
+	pubKeyTmp, _, err := storage.ExtractKeyFromFile(keyFile)
 
 	if err != nil {
 		logger.Printf("%v\n%v", err, USAGE_MSG)
@@ -61,7 +61,7 @@ func Process(args []string) {
 		tx, err = parseStakeTx(os.Args[2:])
 		msgType = p2p.STAKETX_BRDCST
 	default:
-		logger.Printf("Usage: bazo_client [accTx|fundsTx|configTx|stakeTx] ...\n")
+		logger.Printf("%s", USAGE_MSG)
 		return
 	}
 

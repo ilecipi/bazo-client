@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"net"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"net"
 )
 
 const (
@@ -138,7 +138,6 @@ func ReqAcc(accountHash [32]byte) (acc *protocol.Account) {
 	return acc
 }
 
-//Check if our address is the initial root account, since for it no accTx exists
 func reqRootAcc(accountHash [32]byte) (rootAcc *protocol.Account) {
 	conn := Connect(storage.BOOTSTRAP_SERVER)
 
