@@ -22,7 +22,7 @@ func Init() {
 
 	router := mux.NewRouter()
 	getEndpoints(router)
-	log.Fatal(http.ListenAndServe(":443", handlers.CORS()(router)))
+	log.Fatal(http.ListenAndServe(":8001", handlers.CORS()(router)))
 }
 
 func getEndpoints(router *mux.Router) {
