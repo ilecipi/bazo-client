@@ -6,6 +6,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"log"
 	"os"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 var (

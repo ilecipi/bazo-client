@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/mux"
 	"github.com/bazo-blockchain/bazo-client/client"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
@@ -15,6 +16,7 @@ import (
 	"math/big"
 	"net/http"
 	"strconv"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 type JsonResponse struct {
@@ -86,9 +88,10 @@ func CreateConfigTxEndpoint(w http.ResponseWriter, req *http.Request) {
 func CreateFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
 
-	var fromPub, toPub [64]byte
+	var fromPub [64]byte
+	var toPub [64]byte
 
-	header := []byte(params["header"])
+	header, _ := strconv.Atoi(params["header"])
 	amount, _ := strconv.Atoi(params["amount"])
 	fee, _ := strconv.Atoi(params["fee"])
 	txCnt, _ := strconv.Atoi(params["txCnt"])
@@ -100,7 +103,7 @@ func CreateFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	copy(toPub[:], toPubInt.Bytes())
 
 	tx := protocol.FundsTx{
-		Header: header[0],
+		Header: byte(header),
 		Amount: uint64(amount),
 		Fee:    uint64(fee),
 		TxCnt:  uint32(txCnt),
@@ -124,7 +127,6 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 
 	txHashInt, _ := new(big.Int).SetString(params["txHash"], 16)
 	copy(txHash[:], txHashInt.Bytes())
-
 	txSignInt, _ := new(big.Int).SetString(params["txSign"], 16)
 	copy(txSign[:], txSignInt.Bytes())
 
@@ -139,7 +141,7 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 			//If tx was successful or not, delete it from map either way. A new tx creation is the only option to repeat.
 			delete(client.UnsignedFundsTx, txHash)
 		} else {
-			sendJsonResponse(w, JsonResponse{500, fmt.Sprintf("No transaction with hash %x found to sign.", txHash), nil})
+			sendJsonResponse(w, JsonResponse{500, fmt.Sprintf("No transaction with hash %x found to sign", txHash), nil})
 			return
 		}
 	case p2p.CONFIGTX_BRDCST:
@@ -150,7 +152,7 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 			//If tx was successful or not, delete it from map either way. A new tx creation is the only option to repeat.
 			delete(client.UnsignedFundsTx, txHash)
 		} else {
-			sendJsonResponse(w, JsonResponse{500, fmt.Sprintf("No transaction with hash %x found to sign.", txHash), nil})
+			sendJsonResponse(w, JsonResponse{500, fmt.Sprintf("No transaction with hash %x found to sign", txHash), nil})
 			return
 		}
 	case p2p.FUNDSTX_BRDCST:
@@ -168,7 +170,7 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 				delete(client.UnsignedFundsTx, txHash)
 			}
 		} else {
-			sendJsonResponse(w, JsonResponse{500, fmt.Sprintf("No transaction with hash %x found to sign.", txHash), nil})
+			sendJsonResponse(w, JsonResponse{500, fmt.Sprintf("No transaction with hash %x found to sign", txHash), nil})
 			return
 		}
 	}
