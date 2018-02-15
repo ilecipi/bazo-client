@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	MULTISIG_SERVER      = p2p.BOOTSTRAP_SERVER + MULTISIG_SERVER_PORT
-	MULTISIG_SERVER_PORT = "8002"
+	LIGHT_CLIENT_SERVER_PORT = ":8001"
+	MULTISIG_SERVER          = storage.BOOTSTRAP_SERVER + MULTISIG_SERVER_PORT
+	MULTISIG_SERVER_PORT     = ":8002"
 )
 
 func reqBlock(blockHash [32]byte) (block *protocol.Block) {
