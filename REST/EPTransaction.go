@@ -7,7 +7,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/mux"
 	"github.com/bazo-blockchain/bazo-client/client"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
@@ -16,7 +15,6 @@ import (
 	"math/big"
 	"net/http"
 	"strconv"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 type JsonResponse struct {
