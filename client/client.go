@@ -5,6 +5,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"log"
 	"os"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 var (
@@ -69,7 +70,7 @@ func Process(args []string) {
 		return
 	}
 
-	if err := SendTx(p2p.BOOTSTRAP_SERVER, tx, msgType); err != nil {
+	if err := SendTx(storage.BOOTSTRAP_SERVER, tx, msgType); err != nil {
 		logger.Printf("%v\n", err)
 	} else {
 		logger.Printf("Successfully sent the following tansaction:%v", tx)

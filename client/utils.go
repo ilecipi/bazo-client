@@ -2,8 +2,10 @@ package client
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/ecdsa"
 	"crypto/elliptic"
+	"encoding/binary"
 	"errors"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
@@ -14,8 +16,6 @@ import (
 	"os"
 	"strings"
 	"time"
-	"encoding/binary"
-	"bytes"
 )
 
 func Connect(connectionString string) *net.TCPConn {
