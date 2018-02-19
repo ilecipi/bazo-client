@@ -163,6 +163,7 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 				err = client.SendTx(storage.BOOTSTRAP_SERVER, tx, p2p.FUNDSTX_BRDCST)
 			}
 
+			//TODO What if Sig2 errors?! No tx deletion from map.
 			//If tx was successful or not, delete it from map either way. A new tx creation is the only option to repeat.
 			if tx.Sig2 != [64]byte{} {
 				delete(client.UnsignedFundsTx, txHash)
