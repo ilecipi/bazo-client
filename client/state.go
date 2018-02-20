@@ -167,7 +167,7 @@ func getRelevantBlockHashes(pubKey [64]byte) (relevantBlockHashes [][32]byte) {
 		//account is beneficary or
 		//account is in bloomfilter (all addresses involved in acctx/fundstx) or
 		//config state changed
-		if blockHeader.Beneficiary == pubKeyHash || blockHeader.NrConfigTx > 0 || (blockHeader.NrElementsBF > 0 && blockHeader.BloomFilter.Test(pubKeyHash[:])) {
+		if blockHeader.NrConfigTx > 0 || (blockHeader.NrElementsBF > 0 && blockHeader.BloomFilter.Test(pubKeyHash[:])) {
 			relevantBlockHashes = append(relevantBlockHashes, blockHeader.Hash)
 		}
 	}
