@@ -67,11 +67,10 @@ func getState(acc *Account) error {
 	pubKeyHash := protocol.SerializeHashContent(acc.Address)
 
 	//Get blocks if the Acc address:
-	//* issued an Acc
 	//* got issued as an Acc
-	//* created funds
+	//* sent funds
 	//* received funds
-	//* is beneficiary
+	//* is block's beneficiary
 	//* nr of configTx in block is > 0 (in order to maintain params in light-client)
 	relevantBlocks := getRelevantBlocks(acc.Address)
 
