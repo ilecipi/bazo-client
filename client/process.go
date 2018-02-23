@@ -176,7 +176,6 @@ func parseStakeTx(args []string) (protocol.Transaction, error) {
 		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, stakeTxUsage))
 	}
 
-	//TODO not needed!
 	header, err := strconv.Atoi(args[0])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, stakeTxUsage))
