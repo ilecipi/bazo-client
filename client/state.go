@@ -90,6 +90,7 @@ func getState(acc *Account) error {
 				if err := validateTx(block, tx, txHash); err != nil {
 					return err
 				}
+
 				if fundsTx.From == pubKeyHash {
 					//If Acc is no root, balance funds
 					if !acc.IsRoot {
@@ -99,9 +100,11 @@ func getState(acc *Account) error {
 
 					acc.TxCnt += 1
 				}
+
 				if fundsTx.To == pubKeyHash {
 					acc.Balance += fundsTx.Amount
 				}
+
 				if block.Beneficiary == pubKeyHash {
 					acc.Balance += fundsTx.Fee
 				}
@@ -118,9 +121,11 @@ func getState(acc *Account) error {
 				if err := validateTx(block, tx, txHash); err != nil {
 					return err
 				}
+
 				if accTx.PubKey == acc.Address {
 					acc.IsCreated = true
 				}
+
 				if block.Beneficiary == pubKeyHash {
 					acc.Balance += accTx.Fee
 				}
@@ -138,6 +143,7 @@ func getState(acc *Account) error {
 				if err := validateTx(block, tx, txHash); err != nil {
 					return err
 				}
+
 				acc.Balance += configTx.Fee
 			}
 
