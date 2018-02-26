@@ -1,6 +1,7 @@
 package REST
 
 import (
+	"encoding/json"
 	"github.com/bazo-blockchain/bazo-client/client"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
@@ -36,4 +37,15 @@ func getEndpoints(router *mux.Router) {
 
 	router.HandleFunc("/createFundsTx/{header}/{amount}/{fee}/{txCnt}/{fromPub}/{toPub}", CreateFundsTxEndpoint).Methods("POST")
 	router.HandleFunc("/sendFundsTx/{txHash}/{txSign}", SendFundsTxEndpoint).Methods("POST")
+}
+
+func SendJsonResponse(w http.ResponseWriter, resp interface{}) {
+	js, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
 }

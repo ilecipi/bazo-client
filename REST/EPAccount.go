@@ -1,7 +1,6 @@
 package REST
 
 import (
-	"encoding/json"
 	"github.com/bazo-blockchain/bazo-client/client"
 	"github.com/gorilla/mux"
 	"math/big"
@@ -27,22 +26,8 @@ func GetAccountEndpoint(w http.ResponseWriter, req *http.Request) {
 
 	acc, err := client.GetAccount(address)
 	if err != nil {
-		js, err := json.Marshal(err.Error())
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(js)
+		SendJsonResponse(w, JsonResponse{http.StatusInternalServerError, err.Error(), nil})
 	} else {
-		js, err := json.Marshal(acc)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		w.Header().Set("Content-Type", "application/json")
-		w.Write(js)
+		SendJsonResponse(w, JsonResponse{http.StatusOK, "", acc})
 	}
 }

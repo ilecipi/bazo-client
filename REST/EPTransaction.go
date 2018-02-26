@@ -5,7 +5,6 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"encoding/hex"
-	"encoding/json"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-client/client"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
@@ -55,7 +54,7 @@ func CreateAccTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	content[2] = Content{"PrivKey", hex.EncodeToString(newAccAddress.D.Bytes())}
 	content[3] = Content{"TxHash", hex.EncodeToString(txHash[:])}
 
-	sendJsonResponse(w, JsonResponse{200, "AccTx successfully created.", content})
+	SendJsonResponse(w, JsonResponse{http.StatusOK, "AccTx successfully created.", content})
 }
 
 func CreateConfigTxEndpoint(w http.ResponseWriter, req *http.Request) {
@@ -80,7 +79,7 @@ func CreateConfigTxEndpoint(w http.ResponseWriter, req *http.Request) {
 
 	var content [1]Content
 	content[0] = Content{"TxHash", hex.EncodeToString(txHash[:])}
-	sendJsonResponse(w, JsonResponse{200, "ConfigTx successfully created.", content})
+	SendJsonResponse(w, JsonResponse{http.StatusOK, "ConfigTx successfully created.", content})
 }
 
 func CreateFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
@@ -114,7 +113,7 @@ func CreateFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 
 	var content [1]Content
 	content[0] = Content{"TxHash", hex.EncodeToString(txHash[:])}
-	sendJsonResponse(w, JsonResponse{200, "FundsTx successfully created.", content})
+	SendJsonResponse(w, JsonResponse{http.StatusOK, "FundsTx successfully created.", content})
 }
 
 func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
@@ -139,7 +138,7 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 			//If tx was successful or not, delete it from map either way. A new tx creation is the only option to repeat.
 			delete(client.UnsignedFundsTx, txHash)
 		} else {
-			sendJsonResponse(w, JsonResponse{500, fmt.Sprintf("No transaction with hash %x found to sign", txHash), nil})
+			SendJsonResponse(w, JsonResponse{http.StatusInternalServerError, fmt.Sprintf("No transaction with hash %x found to sign", txHash), nil})
 			return
 		}
 	case p2p.CONFIGTX_BRDCST:
@@ -150,7 +149,7 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 			//If tx was successful or not, delete it from map either way. A new tx creation is the only option to repeat.
 			delete(client.UnsignedFundsTx, txHash)
 		} else {
-			sendJsonResponse(w, JsonResponse{500, fmt.Sprintf("No transaction with hash %x found to sign", txHash), nil})
+			SendJsonResponse(w, JsonResponse{http.StatusInternalServerError, fmt.Sprintf("No transaction with hash %x found to sign", txHash), nil})
 			return
 		}
 	case p2p.FUNDSTX_BRDCST:
@@ -169,15 +168,15 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 				delete(client.UnsignedFundsTx, txHash)
 			}
 		} else {
-			sendJsonResponse(w, JsonResponse{500, fmt.Sprintf("No transaction with hash %x found to sign", txHash), nil})
+			SendJsonResponse(w, JsonResponse{http.StatusInternalServerError, fmt.Sprintf("No transaction with hash %x found to sign", txHash), nil})
 			return
 		}
 	}
 
 	if err == nil {
-		sendJsonResponse(w, JsonResponse{200, fmt.Sprintf("Transaction successfully sent to network: %x", txHash), nil})
+		SendJsonResponse(w, JsonResponse{http.StatusOK, fmt.Sprintf("Transaction successfully sent to network: %x", txHash), nil})
 	} else {
-		sendJsonResponse(w, JsonResponse{500, err.Error(), nil})
+		SendJsonResponse(w, JsonResponse{http.StatusInternalServerError, err.Error(), nil})
 	}
 }
 
@@ -191,15 +190,4 @@ func SendConfigTxEndpoint(w http.ResponseWriter, req *http.Request) {
 
 func SendFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	sendTxEndpoint(w, req, p2p.FUNDSTX_BRDCST)
-}
-
-func sendJsonResponse(w http.ResponseWriter, resp interface{}) {
-	js, err := json.Marshal(resp)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(js)
 }
