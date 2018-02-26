@@ -67,11 +67,10 @@ func getState(acc *Account) error {
 	pubKeyHash := protocol.SerializeHashContent(acc.Address)
 
 	//Get blocks if the Acc address:
-	//* issued an Acc
 	//* got issued as an Acc
-	//* created funds
+	//* sent funds
 	//* received funds
-	//* is beneficiary
+	//* is block's beneficiary
 	//* nr of configTx in block is > 0 (in order to maintain params in light-client)
 	relevantBlocks := getRelevantBlocks(acc.Address)
 
@@ -91,6 +90,7 @@ func getState(acc *Account) error {
 				if err := validateTx(block, tx, txHash); err != nil {
 					return err
 				}
+
 				if fundsTx.From == pubKeyHash {
 					//If Acc is no root, balance funds
 					if !acc.IsRoot {
@@ -100,9 +100,11 @@ func getState(acc *Account) error {
 
 					acc.TxCnt += 1
 				}
+
 				if fundsTx.To == pubKeyHash {
 					acc.Balance += fundsTx.Amount
 				}
+
 				if block.Beneficiary == pubKeyHash {
 					acc.Balance += fundsTx.Fee
 				}
@@ -119,9 +121,11 @@ func getState(acc *Account) error {
 				if err := validateTx(block, tx, txHash); err != nil {
 					return err
 				}
+
 				if accTx.PubKey == acc.Address {
 					acc.IsCreated = true
 				}
+
 				if block.Beneficiary == pubKeyHash {
 					acc.Balance += accTx.Fee
 				}
@@ -139,6 +143,7 @@ func getState(acc *Account) error {
 				if err := validateTx(block, tx, txHash); err != nil {
 					return err
 				}
+
 				acc.Balance += configTx.Fee
 			}
 
@@ -167,7 +172,7 @@ func getRelevantBlockHashes(pubKey [64]byte) (relevantBlockHashes [][32]byte) {
 		//account is beneficary or
 		//account is in bloomfilter (all addresses involved in acctx/fundstx) or
 		//config state changed
-		if blockHeader.Beneficiary == pubKeyHash || blockHeader.NrConfigTx > 0 || (blockHeader.NrElementsBF > 0 && blockHeader.BloomFilter.Test(pubKeyHash[:])) {
+		if blockHeader.NrConfigTx > 0 || (blockHeader.NrElementsBF > 0 && blockHeader.BloomFilter.Test(pubKeyHash[:])) {
 			relevantBlockHashes = append(relevantBlockHashes, blockHeader.Hash)
 		}
 	}

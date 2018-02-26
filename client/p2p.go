@@ -112,7 +112,7 @@ func reqBlockHeader(blockHash []byte) (blockHeader *protocol.Block) {
 	}
 
 	if header.TypeID == p2p.BlOCK_HEADER_RES {
-		blockHeader = blockHeader.Decode(payload)
+		blockHeader = blockHeader.DecodeHeader(payload)
 	}
 
 	conn.Close()
