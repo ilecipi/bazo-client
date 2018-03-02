@@ -156,7 +156,7 @@ func getState(acc *Account, lastTenTx []*FundsTxJson) error {
 	}
 
 	for _, tx := range reqNonVerifiedTx(protocol.SerializeHashContent(acc.Address)) {
-		put(lastTenTx, ConvertFundsTx(tx, "non verified"))
+		put(lastTenTx, ConvertFundsTx(tx, "not verified"))
 	}
 
 	return nil
