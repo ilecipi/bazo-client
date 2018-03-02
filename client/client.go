@@ -36,7 +36,7 @@ func State(keyFile string) {
 
 	logger.Printf("My address: %x\n", accAddress)
 
-	acc, err := GetAccount(accAddress)
+	acc, _, err := GetAccount(accAddress)
 	if err != nil {
 		logger.Println(err)
 	} else {

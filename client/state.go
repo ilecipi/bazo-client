@@ -63,7 +63,7 @@ func getNewBlockHeaders(latest *protocol.Block, eldest *protocol.Block, list []*
 	return list
 }
 
-func getState(acc *Account) error {
+func getState(acc *Account, lastTenTx []*FundsTxJson) error {
 	pubKeyHash := protocol.SerializeHashContent(acc.Address)
 
 	//Get blocks if the Acc address:
@@ -103,6 +103,8 @@ func getState(acc *Account) error {
 
 				if fundsTx.To == pubKeyHash {
 					acc.Balance += fundsTx.Amount
+
+					put(lastTenTx, ConvertFundsTx(fundsTx, "verified"))
 				}
 
 				if block.Beneficiary == pubKeyHash {
@@ -151,6 +153,10 @@ func getState(acc *Account) error {
 		}
 
 		//TODO stakeTx
+	}
+
+	for _, tx := range reqNonVerifiedTx(protocol.SerializeHashContent(acc.Address)) {
+		put(lastTenTx, ConvertFundsTx(tx, "non verified"))
 	}
 
 	return nil

@@ -26,10 +26,19 @@ func GetAccountEndpoint(w http.ResponseWriter, req *http.Request) {
 		addressHash = protocol.SerializeHashContent(address)
 	}
 
-	acc, err := client.GetAccount(address)
+	acc, lastTenTx, err := client.GetAccount(address)
 	if err != nil {
 		SendJsonResponse(w, JsonResponse{http.StatusInternalServerError, err.Error(), nil})
 	} else {
-		SendJsonResponse(w, JsonResponse{http.StatusOK, "", acc})
+		var content []Content
+		content = append(content, Content{"account", acc})
+
+		for _, tx := range lastTenTx {
+			if tx != nil {
+				content = append(content, Content{"inbound", tx})
+			}
+		}
+
+		SendJsonResponse(w, JsonResponse{http.StatusOK, "", content})
 	}
 }

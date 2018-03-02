@@ -6,7 +6,6 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
-	"net"
 )
 
 const (
@@ -162,15 +161,37 @@ func reqRootAcc(accountHash [32]byte) (rootAcc *protocol.Account) {
 	return rootAcc
 }
 
+func reqNonVerifiedTx(addressHash [32]byte) (openFundsTxs []*protocol.FundsTx) {
+	conn := Connect(MULTISIG_SERVER)
+
+	packet := p2p.BuildPacket(p2p.FUNDSTX_REQ, addressHash[:])
+	conn.Write(packet)
+
+	header, payload, err := RcvData(conn)
+	if err != nil {
+		logger.Printf("Disconnected: %v\n", err)
+		return nil
+	}
+
+	if header.TypeID == p2p.FUNDSTX_RES {
+		index := 0
+		cnt := 1
+		for len(payload) >= cnt*protocol.FUNDSTX_SIZE {
+			var openFundsTx *protocol.FundsTx
+			openFundsTx = openFundsTx.Decode(payload[index : index+protocol.FUNDSTX_SIZE])
+			openFundsTxs = append(openFundsTxs, openFundsTx)
+
+			index += protocol.FUNDSTX_SIZE
+			cnt++
+		}
+	}
+
+	return openFundsTxs
+}
+
 func SendTx(dial string, tx protocol.Transaction, typeID uint8) (err error) {
-	var conn net.Conn
-
-	//Transaction creation successful
+	conn := Connect(dial)
 	packet := p2p.BuildPacket(typeID, tx.Encode())
-
-	//Open a connection
-	conn = Connect(dial)
-
 	conn.Write(packet)
 
 	header, _, err := RcvData(conn)

@@ -42,3 +42,11 @@ func RcvData(c net.Conn) (header *p2p.Header, payload []byte, err error) {
 
 	return header, payload, nil
 }
+
+func put(slice []*FundsTxJson, tx *FundsTxJson) {
+	for i := 0; i < 9; i++ {
+		slice[i] = slice[i+1]
+	}
+
+	slice[9] = tx
+}
