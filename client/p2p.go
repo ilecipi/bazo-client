@@ -2,7 +2,6 @@ package client
 
 import (
 	"errors"
-	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
@@ -194,11 +193,10 @@ func SendTx(dial string, tx protocol.Transaction, typeID uint8) (err error) {
 	packet := p2p.BuildPacket(typeID, tx.Encode())
 	conn.Write(packet)
 
-	header, _, err := RcvData(conn)
-	if header.TypeID != p2p.TX_BRDCST_ACK || err != nil {
-		err = errors.New(fmt.Sprintf("%v\nCould not send the following transaction: %x", err, tx.Hash()))
+	header, payload, err := RcvData(conn)
+	if header.TypeID == p2p.NOT_FOUND {
+		err = errors.New(string(payload[:]))
 	}
-
 	conn.Close()
 
 	return err
