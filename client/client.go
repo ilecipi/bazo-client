@@ -67,6 +67,6 @@ func Process(args []string) {
 	if err := SendTx(storage.BOOTSTRAP_SERVER, tx, msgType); err != nil {
 		logger.Printf("%v\n", err)
 	} else {
-		logger.Printf("Successfully sent the following tansaction:%v", tx)
+		logger.Printf("Transaction successfully sent to network:%v", tx)
 	}
 }
