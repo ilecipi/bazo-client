@@ -18,9 +18,7 @@ var (
 
 //Load initially all block headers and invert them (first oldest, last latest)
 func InitState() {
-	logger.Println("Loading all block headers.")
 	loadAllBlockHeaders()
-	logger.Println("All block headers loaded.")
 	allBlockHeaders = miner.InvertBlockArray(allBlockHeaders)
 
 	go refreshState()
@@ -32,8 +30,12 @@ func refreshState() {
 		//Try to load all headers if non have been loaded before
 		if len(allBlockHeaders) > 0 {
 			var newBlockHeaders []*protocol.Block
-			newBlockHeaders = getNewBlockHeaders(reqBlockHeader(nil), allBlockHeaders[len(allBlockHeaders)-1], newBlockHeaders)
-			allBlockHeaders = append(allBlockHeaders, newBlockHeaders...)
+			if lastBlockHeader := reqBlockHeader(nil); lastBlockHeader == nil {
+				logger.Printf("Refreshing state failed.")
+			} else {
+				newBlockHeaders = getNewBlockHeaders(lastBlockHeader, allBlockHeaders[len(allBlockHeaders)-1], newBlockHeaders)
+				allBlockHeaders = append(allBlockHeaders, newBlockHeaders...)
+			}
 		} else {
 			loadAllBlockHeaders()
 		}
@@ -75,84 +77,87 @@ func getState(acc *Account, lastTenTx []*FundsTxJson) error {
 	relevantBlocks := getRelevantBlocks(acc.Address)
 
 	for _, block := range relevantBlocks {
-		//Collect block reward
-		if block.Beneficiary == pubKeyHash {
-			acc.Balance += activeParameters.Block_reward
-		}
+		if block != nil {
+			//Collect block reward
+			if block.Beneficiary == pubKeyHash {
+				acc.Balance += activeParameters.Block_reward
+			}
 
-		//Balance funds and collect fee
-		for _, txHash := range block.FundsTxData {
-			tx := reqTx(p2p.FUNDSTX_REQ, txHash)
-			fundsTx := tx.(*protocol.FundsTx)
+			//Balance funds and collect fee
+			for _, txHash := range block.FundsTxData {
+				tx := reqTx(p2p.FUNDSTX_REQ, txHash)
+				fundsTx := tx.(*protocol.FundsTx)
 
-			if fundsTx.From == pubKeyHash || fundsTx.To == pubKeyHash || block.Beneficiary == pubKeyHash {
-				//Validate tx
-				if err := validateTx(block, tx, txHash); err != nil {
-					return err
-				}
-
-				if fundsTx.From == pubKeyHash {
-					//If Acc is no root, balance funds
-					if !acc.IsRoot {
-						acc.Balance -= fundsTx.Amount
-						acc.Balance -= fundsTx.Fee
+				if fundsTx.From == pubKeyHash || fundsTx.To == pubKeyHash || block.Beneficiary == pubKeyHash {
+					//Validate tx
+					if err := validateTx(block, tx, txHash); err != nil {
+						return err
 					}
 
-					acc.TxCnt += 1
-				}
+					if fundsTx.From == pubKeyHash {
+						//If Acc is no root, balance funds
+						if !acc.IsRoot {
+							acc.Balance -= fundsTx.Amount
+							acc.Balance -= fundsTx.Fee
+						}
 
-				if fundsTx.To == pubKeyHash {
-					acc.Balance += fundsTx.Amount
+						acc.TxCnt += 1
+					}
 
-					put(lastTenTx, ConvertFundsTx(fundsTx, "verified"))
+					if fundsTx.To == pubKeyHash {
+						acc.Balance += fundsTx.Amount
+
+						put(lastTenTx, ConvertFundsTx(fundsTx, "verified"))
+					}
+
+					if block.Beneficiary == pubKeyHash {
+						acc.Balance += fundsTx.Fee
+					}
 				}
+			}
+
+			//Check if Account was issued and collect fee
+			for _, txHash := range block.AccTxData {
+				tx := reqTx(p2p.ACCTX_REQ, txHash)
+				accTx := tx.(*protocol.AccTx)
+
+				if accTx.PubKey == acc.Address || block.Beneficiary == pubKeyHash {
+					//Validate tx
+					if err := validateTx(block, tx, txHash); err != nil {
+						return err
+					}
+
+					if accTx.PubKey == acc.Address {
+						acc.IsCreated = true
+					}
+
+					if block.Beneficiary == pubKeyHash {
+						acc.Balance += accTx.Fee
+					}
+				}
+			}
+
+			//Update config parameters and collect fee
+			for _, txHash := range block.ConfigTxData {
+				tx := reqTx(p2p.CONFIGTX_REQ, txHash)
+				configTx := tx.(*protocol.ConfigTx)
+				configTxSlice := []*protocol.ConfigTx{configTx}
 
 				if block.Beneficiary == pubKeyHash {
-					acc.Balance += fundsTx.Fee
-				}
-			}
-		}
+					//Validate tx
+					if err := validateTx(block, tx, txHash); err != nil {
+						return err
+					}
 
-		//Check if Account was issued and collect fee
-		for _, txHash := range block.AccTxData {
-			tx := reqTx(p2p.ACCTX_REQ, txHash)
-			accTx := tx.(*protocol.AccTx)
-
-			if accTx.PubKey == acc.Address || block.Beneficiary == pubKeyHash {
-				//Validate tx
-				if err := validateTx(block, tx, txHash); err != nil {
-					return err
+					acc.Balance += configTx.Fee
 				}
 
-				if accTx.PubKey == acc.Address {
-					acc.IsCreated = true
-				}
-
-				if block.Beneficiary == pubKeyHash {
-					acc.Balance += accTx.Fee
-				}
-			}
-		}
-
-		//Update config parameters and collect fee
-		for _, txHash := range block.ConfigTxData {
-			tx := reqTx(p2p.CONFIGTX_REQ, txHash)
-			configTx := tx.(*protocol.ConfigTx)
-			configTxSlice := []*protocol.ConfigTx{configTx}
-
-			if block.Beneficiary == pubKeyHash {
-				//Validate tx
-				if err := validateTx(block, tx, txHash); err != nil {
-					return err
-				}
-
-				acc.Balance += configTx.Fee
+				miner.CheckAndChangeParameters(&activeParameters, &configTxSlice)
 			}
 
-			miner.CheckAndChangeParameters(&activeParameters, &configTxSlice)
-		}
+			//TODO stakeTx
 
-		//TODO stakeTx
+		}
 	}
 
 	for _, tx := range reqNonVerifiedTx(protocol.SerializeHashContent(acc.Address)) {
@@ -164,8 +169,9 @@ func getState(acc *Account, lastTenTx []*FundsTxJson) error {
 
 func getRelevantBlocks(pubKey [64]byte) (relevantBlocks []*protocol.Block) {
 	for _, blockHash := range getRelevantBlockHashes(pubKey) {
-		block := reqBlock(blockHash)
-		relevantBlocks = append(relevantBlocks, block)
+		if block := reqBlock(blockHash); block != nil {
+			relevantBlocks = append(relevantBlocks, block)
+		}
 	}
 
 	return relevantBlocks
@@ -188,20 +194,30 @@ func getRelevantBlockHashes(pubKey [64]byte) (relevantBlockHashes [][32]byte) {
 
 //Returns all block headers, youngest first, genesis last
 func loadAllBlockHeaders() {
+	logger.Println("Loading all block headers.")
+
 	counter := 0
 
 	//If no blockhash as param is given, the last block header is given back
-	blockHeader := reqBlockHeader(nil)
-	allBlockHeaders = append(allBlockHeaders, blockHeader)
-	logger.Printf("Header %v loaded", counter)
-	counter++
-	prevHash := blockHeader.PrevHash
-
-	for blockHeader.Hash != [32]byte{} {
-		blockHeader = reqBlockHeader(prevHash[:])
+	if blockHeader := reqBlockHeader(nil); blockHeader != nil {
 		allBlockHeaders = append(allBlockHeaders, blockHeader)
 		logger.Printf("Header %v loaded", counter)
 		counter++
-		prevHash = blockHeader.PrevHash
+		prevHash := blockHeader.PrevHash
+
+		for blockHeader.Hash != [32]byte{} {
+			if blockHeader = reqBlockHeader(prevHash[:]); blockHeader != nil {
+				allBlockHeaders = append(allBlockHeaders, blockHeader)
+				logger.Printf("Header %v loaded", counter)
+				counter++
+				prevHash = blockHeader.PrevHash
+			} else {
+				logger.Printf("Loading block headers failed.")
+			}
+		}
+
+		logger.Println("All block headers loaded.")
+	} else {
+		logger.Printf("Loading block headers failed.")
 	}
 }
