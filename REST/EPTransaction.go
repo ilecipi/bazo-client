@@ -78,7 +78,7 @@ func CreateConfigTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	client.UnsignedConfigTx[txHash] = &tx
 
 	var content []Content
-	content[0] = Content{"TxHash", hex.EncodeToString(txHash[:])}
+	content = append(content, Content{"TxHash", hex.EncodeToString(txHash[:])})
 	SendJsonResponse(w, JsonResponse{http.StatusOK, "ConfigTx successfully created.", content})
 }
 
