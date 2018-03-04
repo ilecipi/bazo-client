@@ -9,7 +9,8 @@ import (
 
 var (
 	//All blockheaders of the whole chain
-	allBlockHeaders  []*protocol.Block
+	blockHeaders     []*protocol.Block
+	cnt              uint32
 	activeParameters miner.Parameters
 	UnsignedAccTx    = make(map[[32]byte]*protocol.AccTx)
 	UnsignedConfigTx = make(map[[32]byte]*protocol.ConfigTx)
@@ -18,8 +19,8 @@ var (
 
 //Load initially all block headers and invert them (first oldest, last latest)
 func InitState() {
-	loadAllBlockHeaders()
-	allBlockHeaders = miner.InvertBlockArray(allBlockHeaders)
+	cnt = 0
+	updateBlockHeader(true)
 
 	go refreshState()
 }
@@ -27,42 +28,58 @@ func InitState() {
 //Update allBlockHeaders to the latest header
 func refreshState() {
 	for {
-		//Try to load all headers if non have been loaded before
-		if len(allBlockHeaders) > 0 {
-			var newBlockHeaders []*protocol.Block
-			if lastBlockHeader := reqBlockHeader(nil); lastBlockHeader == nil {
-				logger.Printf("Refreshing state failed.")
-			} else {
-				newBlockHeaders = getNewBlockHeaders(lastBlockHeader, allBlockHeaders[len(allBlockHeaders)-1], newBlockHeaders)
-				allBlockHeaders = append(allBlockHeaders, newBlockHeaders...)
-			}
+		time.Sleep(10 * time.Second)
+
+		updateBlockHeader(false)
+	}
+}
+
+func updateBlockHeader(initial bool) {
+	var loaded []*protocol.Block
+	if youngest := reqBlockHeader(nil); youngest == nil {
+		logger.Printf("Refreshing state failed.")
+	} else {
+		if len(blockHeaders) > 0 {
+			loaded = checkForNewBlockHeaders(initial, youngest, blockHeaders[len(blockHeaders)-1].Hash, loaded)
 		} else {
-			loadAllBlockHeaders()
+			loaded = checkForNewBlockHeaders(initial, youngest, [32]byte{}, loaded)
 		}
 
-		time.Sleep(10 * time.Second)
+		blockHeaders = append(blockHeaders, loaded...)
 	}
 }
 
 //Get new blockheaders recursively
-func getNewBlockHeaders(latest *protocol.Block, eldest *protocol.Block, list []*protocol.Block) []*protocol.Block {
-	if latest.Hash != eldest.Hash {
-		ancestor := reqBlockHeader(latest.PrevHash[:])
-		list = getNewBlockHeaders(ancestor, eldest, list)
-		list = append(list, latest)
-		logger.Printf("Header: %x loaded\n"+
-			"NrFundsTx: %v\n"+
-			"NrAccTx: %v\n"+
-			"NrConfigTx: %v\n"+
-			"NrStakeTx: %v\n",
-			latest.Hash[:8],
-			latest.NrFundsTx,
-			latest.NrAccTx,
-			latest.NrConfigTx,
-			latest.NrConfigTx)
+func checkForNewBlockHeaders(initial bool, youngestBlock *protocol.Block, eldestHash [32]byte, loaded []*protocol.Block) []*protocol.Block {
+	if youngestBlock.Hash != eldestHash && youngestBlock.Hash != [32]byte{} {
+		var ancestor *protocol.Block
+
+		if ancestor = reqBlockHeader(youngestBlock.PrevHash[:]); ancestor == nil {
+			logger.Printf("Refreshing state failed.")
+
+		}
+
+		loaded = checkForNewBlockHeaders(initial, ancestor, eldestHash, loaded)
+		loaded = append(loaded, youngestBlock)
+
+		if initial {
+			logger.Printf("Header %v loaded\n", cnt)
+			cnt++
+		} else {
+			logger.Printf("Header: %x loaded\n"+
+				"NrFundsTx: %v\n"+
+				"NrAccTx: %v\n"+
+				"NrConfigTx: %v\n"+
+				"NrStakeTx: %v\n",
+				youngestBlock.Hash[:8],
+				youngestBlock.NrFundsTx,
+				youngestBlock.NrAccTx,
+				youngestBlock.NrConfigTx,
+				youngestBlock.NrConfigTx)
+		}
 	}
 
-	return list
+	return loaded
 }
 
 func getState(acc *Account, lastTenTx []*FundsTxJson) error {
@@ -179,7 +196,7 @@ func getRelevantBlocks(pubKey [64]byte) (relevantBlocks []*protocol.Block) {
 
 func getRelevantBlockHashes(pubKey [64]byte) (relevantBlockHashes [][32]byte) {
 	pubKeyHash := protocol.SerializeHashContent(pubKey)
-	for _, blockHeader := range allBlockHeaders {
+	for _, blockHeader := range blockHeaders {
 		//Block is relevant if:
 		//account is beneficary or
 		//account is in bloomfilter (all addresses involved in acctx/fundstx) or
@@ -190,34 +207,4 @@ func getRelevantBlockHashes(pubKey [64]byte) (relevantBlockHashes [][32]byte) {
 	}
 
 	return relevantBlockHashes
-}
-
-//Returns all block headers, youngest first, genesis last
-func loadAllBlockHeaders() {
-	logger.Println("Loading all block headers.")
-
-	counter := 0
-
-	//If no blockhash as param is given, the last block header is given back
-	if blockHeader := reqBlockHeader(nil); blockHeader != nil {
-		allBlockHeaders = append(allBlockHeaders, blockHeader)
-		logger.Printf("Header %v loaded", counter)
-		counter++
-		prevHash := blockHeader.PrevHash
-
-		for blockHeader.Hash != [32]byte{} {
-			if blockHeader = reqBlockHeader(prevHash[:]); blockHeader != nil {
-				allBlockHeaders = append(allBlockHeaders, blockHeader)
-				logger.Printf("Header %v loaded", counter)
-				counter++
-				prevHash = blockHeader.PrevHash
-			} else {
-				logger.Printf("Loading block headers failed.")
-			}
-		}
-
-		logger.Println("All block headers loaded.")
-	} else {
-		logger.Printf("Loading block headers failed.")
-	}
 }
