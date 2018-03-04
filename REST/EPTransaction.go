@@ -172,7 +172,7 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 	}
 
 	if err == nil {
-		SendJsonResponse(w, JsonResponse{http.StatusOK, fmt.Sprintf("Transaction successfully sent to network: %x", txHash), nil})
+		SendJsonResponse(w, JsonResponse{http.StatusOK, fmt.Sprintf("Transaction %x successfully sent to network.", txHash[:8]), nil})
 	} else {
 		SendJsonResponse(w, JsonResponse{http.StatusInternalServerError, err.Error(), nil})
 	}
