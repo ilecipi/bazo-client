@@ -17,9 +17,10 @@ type Account struct {
 	IsRoot        bool     `json:"isRoot"`
 }
 
-func GetAccount(address [64]byte) (*Account, error) {
+func GetAccount(address [64]byte) (*Account, []*FundsTxJson, error) {
 	//Initialize new account with empty address
 	acc := Account{address, hex.EncodeToString(address[:]), 0, 0, false, false}
+	var lastTenTx = make([]*FundsTxJson, 10)
 
 	//Set default params
 	activeParameters = miner.NewDefaultParameters()
@@ -29,9 +30,9 @@ func GetAccount(address [64]byte) (*Account, error) {
 		acc.IsRoot = true
 	}
 
-	err = getState(&acc)
+	err := getState(&acc, lastTenTx)
 	if err != nil {
-		return &acc, errors.New(fmt.Sprintf("Could not calculate state of account %x: %v\n", acc.Address[:8], err))
+		return nil, nil, errors.New(fmt.Sprintf("Could not calculate state of account %x: %v\n", acc.Address[:8], err))
 	}
 
 	//No accTx exists for this account since it is the initial root account
@@ -42,10 +43,10 @@ func GetAccount(address [64]byte) (*Account, error) {
 	}
 
 	if acc.IsCreated == false {
-		return nil, errors.New(fmt.Sprintf("Account %x does not exist.\n", acc.Address[:8]))
+		return nil, nil, errors.New(fmt.Sprintf("Account %x does not exist.\n", acc.Address[:8]))
 	}
 
-	return &acc, nil
+	return &acc, lastTenTx, nil
 }
 
 func (acc Account) String() string {

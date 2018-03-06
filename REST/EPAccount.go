@@ -2,6 +2,7 @@ package REST
 
 import (
 	"github.com/bazo-blockchain/bazo-client/client"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/gorilla/mux"
 	"math/big"
 	"net/http"
@@ -22,12 +23,22 @@ func GetAccountEndpoint(w http.ResponseWriter, req *http.Request) {
 		address = acc.Address
 	} else if len(param) == 128 {
 		copy(address[:], pubKeyInt.Bytes())
+		addressHash = protocol.SerializeHashContent(address)
 	}
 
-	acc, err := client.GetAccount(address)
+	acc, lastTenTx, err := client.GetAccount(address)
 	if err != nil {
 		SendJsonResponse(w, JsonResponse{http.StatusInternalServerError, err.Error(), nil})
 	} else {
-		SendJsonResponse(w, JsonResponse{http.StatusOK, "", acc})
+		var content []Content
+		content = append(content, Content{"account", acc})
+
+		for _, tx := range lastTenTx {
+			if tx != nil {
+				content = append(content, Content{"inbound", tx})
+			}
+		}
+
+		SendJsonResponse(w, JsonResponse{http.StatusOK, "", content})
 	}
 }

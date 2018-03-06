@@ -17,14 +17,14 @@ import (
 )
 
 type JsonResponse struct {
-	Code    int         `json:"code,omitempty"`
-	Message string      `json:"message,omitempty"`
-	Content interface{} `json:"content,omitempty"`
+	Code    int       `json:"code,omitempty"`
+	Message string    `json:"message,omitempty"`
+	Content []Content `json:"content,omitempty"`
 }
 
 type Content struct {
-	Name   string `json:"name,omitempty"`
-	Detail string `json:"detail,omitempty"`
+	Name   string      `json:"name,omitempty"`
+	Detail interface{} `json:"detail,omitempty"`
 }
 
 func CreateAccTxEndpoint(w http.ResponseWriter, req *http.Request) {
@@ -48,11 +48,11 @@ func CreateAccTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	txHash := tx.Hash()
 	client.UnsignedAccTx[txHash] = &tx
 
-	var content [4]Content
-	content[0] = Content{"PubKey1", hex.EncodeToString(tx.PubKey[:32])}
-	content[1] = Content{"PubKey2", hex.EncodeToString(tx.PubKey[32:])}
-	content[2] = Content{"PrivKey", hex.EncodeToString(newAccAddress.D.Bytes())}
-	content[3] = Content{"TxHash", hex.EncodeToString(txHash[:])}
+	var content []Content
+	content = append(content, Content{"PubKey1", hex.EncodeToString(tx.PubKey[:32])})
+	content = append(content, Content{"PubKey2", hex.EncodeToString(tx.PubKey[32:])})
+	content = append(content, Content{"PrivKey", hex.EncodeToString(newAccAddress.D.Bytes())})
+	content = append(content, Content{"TxHash", hex.EncodeToString(txHash[:])})
 
 	SendJsonResponse(w, JsonResponse{http.StatusOK, "AccTx successfully created.", content})
 }
@@ -77,8 +77,8 @@ func CreateConfigTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	txHash := tx.Hash()
 	client.UnsignedConfigTx[txHash] = &tx
 
-	var content [1]Content
-	content[0] = Content{"TxHash", hex.EncodeToString(txHash[:])}
+	var content []Content
+	content = append(content, Content{"TxHash", hex.EncodeToString(txHash[:])})
 	SendJsonResponse(w, JsonResponse{http.StatusOK, "ConfigTx successfully created.", content})
 }
 
@@ -111,8 +111,8 @@ func CreateFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	txHash := tx.Hash()
 	client.UnsignedFundsTx[txHash] = &tx
 
-	var content [1]Content
-	content[0] = Content{"TxHash", hex.EncodeToString(txHash[:])}
+	var content []Content
+	content = append(content, Content{"TxHash", hex.EncodeToString(txHash[:])})
 	SendJsonResponse(w, JsonResponse{http.StatusOK, "FundsTx successfully created.", content})
 }
 
@@ -157,14 +157,12 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 			if tx.Sig1 == [64]byte{} {
 				tx.Sig1 = txSign
 				err = client.SendTx(client.MULTISIG_SERVER, tx, p2p.FUNDSTX_BRDCST)
+				if err != nil {
+					delete(client.UnsignedFundsTx, txHash)
+				}
 			} else {
 				tx.Sig2 = txSign
 				err = client.SendTx(storage.BOOTSTRAP_SERVER, tx, p2p.FUNDSTX_BRDCST)
-			}
-
-			//TODO What if Sig2 errors?! No tx deletion from map.
-			//If tx was successful or not, delete it from map either way. A new tx creation is the only option to repeat.
-			if tx.Sig2 != [64]byte{} {
 				delete(client.UnsignedFundsTx, txHash)
 			}
 		} else {
@@ -174,7 +172,7 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 	}
 
 	if err == nil {
-		SendJsonResponse(w, JsonResponse{http.StatusOK, fmt.Sprintf("Transaction successfully sent to network: %x", txHash), nil})
+		SendJsonResponse(w, JsonResponse{http.StatusOK, fmt.Sprintf("Transaction %x successfully sent to network.", txHash[:8]), nil})
 	} else {
 		SendJsonResponse(w, JsonResponse{http.StatusInternalServerError, err.Error(), nil})
 	}
