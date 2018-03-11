@@ -30,6 +30,7 @@ func getEndpoints(router *mux.Router) {
 	router.HandleFunc("/account/{id}", GetAccountEndpoint).Methods("GET")
 
 	router.HandleFunc("/createAccTx/{header}/{fee}/{issuer}", CreateAccTxEndpoint).Methods("POST")
+	router.HandleFunc("/createAccTx/{pubKey}/{header}/{fee}/{issuer}", CreateAccTxEndpointWithPubKey).Methods("POST")
 	router.HandleFunc("/sendAccTx/{txHash}/{txSign}", SendAccTxEndpoint).Methods("POST")
 
 	router.HandleFunc("/createConfigTx/{header}/{id}/{payload}/{fee}/{txCnt}", CreateConfigTxEndpoint).Methods("POST")

@@ -57,6 +57,30 @@ func CreateAccTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	SendJsonResponse(w, JsonResponse{http.StatusOK, "AccTx successfully created.", content})
 }
 
+func CreateAccTxEndpointWithPubKey(w http.ResponseWriter, req *http.Request) {
+	params := mux.Vars(req)
+
+	header, _ := strconv.Atoi(params["header"])
+	fee, _ := strconv.Atoi(params["fee"])
+
+	tx := protocol.AccTx{
+		Header: byte(header),
+		Fee:    uint64(fee),
+	}
+
+	fromPubInt, _ := new(big.Int).SetString(params["pubKey"], 16)
+	copy(tx.PubKey[:], fromPubInt.Bytes())
+	issuerInt, _ := new(big.Int).SetString(params["issuer"], 16)
+	copy(tx.Issuer[:], issuerInt.Bytes())
+
+	txHash := tx.Hash()
+	client.UnsignedAccTx[txHash] = &tx
+
+	var content []Content
+	content = append(content, Content{"TxHash", hex.EncodeToString(txHash[:])})
+	SendJsonResponse(w, JsonResponse{http.StatusOK, "AccTx successfully created.", content})
+}
+
 func CreateConfigTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
 
