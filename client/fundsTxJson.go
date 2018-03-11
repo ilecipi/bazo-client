@@ -1,12 +1,13 @@
 package client
 
 import (
-	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"encoding/hex"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
 
 type FundsTxJson struct {
 	Header byte   `json:"header"`
+	Hash   string `json:"hash"`
 	Amount uint64 `json:"amount"`
 	Fee    uint64 `json:"fee"`
 	TxCnt  uint32 `json:"txCnt"`
@@ -18,15 +19,17 @@ type FundsTxJson struct {
 }
 
 func ConvertFundsTx(fundsTx *protocol.FundsTx, status string) (fundsTxJson *FundsTxJson) {
+	txHash := fundsTx.Hash()
 	return &FundsTxJson{
 		fundsTx.Header,
+		hex.EncodeToString(txHash[:]),
 		fundsTx.Amount,
 		fundsTx.Fee,
 		fundsTx.TxCnt,
-		hex.EncodeToString(fundsTx.From[:32]),
-		hex.EncodeToString(fundsTx.To[:32]),
-		hex.EncodeToString(fundsTx.Sig1[:64]),
-		hex.EncodeToString(fundsTx.Sig2[:64]),
+		hex.EncodeToString(fundsTx.From[:]),
+		hex.EncodeToString(fundsTx.To[:]),
+		hex.EncodeToString(fundsTx.Sig1[:]),
+		hex.EncodeToString(fundsTx.Sig2[:]),
 		status,
 	}
 }
