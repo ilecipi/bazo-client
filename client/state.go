@@ -177,8 +177,14 @@ func getState(acc *Account, lastTenTx []*FundsTxJson) error {
 		}
 	}
 
-	for _, tx := range reqNonVerifiedTx(protocol.SerializeHashContent(acc.Address)) {
-		put(lastTenTx, ConvertFundsTx(tx, "not verified"))
+	addressHash := protocol.SerializeHashContent(acc.Address)
+	for _, tx := range reqNonVerifiedTx(addressHash) {
+		if tx.To == addressHash {
+			put(lastTenTx, ConvertFundsTx(tx, "not verified"))
+		}
+		if tx.From == addressHash {
+			acc.TxCnt++
+		}
 	}
 
 	return nil
