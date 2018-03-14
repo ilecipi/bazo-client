@@ -134,6 +134,7 @@ func CreateFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 
 	txHash := tx.Hash()
 	client.UnsignedFundsTx[txHash] = &tx
+	logger.Printf("New unsigned tx: %x\n", txHash)
 
 	var content []Content
 	content = append(content, Content{"TxHash", hex.EncodeToString(txHash[:])})
@@ -190,6 +191,7 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 				delete(client.UnsignedFundsTx, txHash)
 			}
 		} else {
+			logger.Printf("No transaction with hash %x found to sign\n", txHash)
 			SendJsonResponse(w, JsonResponse{http.StatusInternalServerError, fmt.Sprintf("No transaction with hash %x found to sign", txHash), nil})
 			return
 		}
@@ -198,6 +200,7 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 	if err == nil {
 		SendJsonResponse(w, JsonResponse{http.StatusOK, fmt.Sprintf("Transaction %x successfully sent to network.", txHash[:8]), nil})
 	} else {
+		logger.Printf("Sending tx failed: %v\n", err.Error())
 		SendJsonResponse(w, JsonResponse{http.StatusInternalServerError, err.Error(), nil})
 	}
 }
