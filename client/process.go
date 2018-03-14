@@ -201,7 +201,7 @@ func parseStakeTx(args []string) (protocol.Transaction, error) {
 		//create the hash of the seed which will be included in the transaction
 		hashedSeed = protocol.SerializeHashContent(seed)
 
-		storage.AppendNewSeed(storage.SEED_FILE_NAME, storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
+		storage.AppendNewSeed(args[4]+"_seed.json", storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
 
 		logger.Printf("%x", string(hashedSeed[:]))
 	}
