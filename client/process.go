@@ -164,7 +164,7 @@ func parseFundsTx(args []string) (tx protocol.Transaction, err error) {
 	return tx, nil
 }
 
-func parseStakeTx(args []string) (protocol.Transaction, error) {
+func parseStakeTx(args []string) (tx protocol.Transaction, err error) {
 	stakeTxUsage := "\nUsage: bazo_client stakeTx <header> <fee> <isStaking> <account> <privKey>"
 
 	var (
@@ -233,10 +233,17 @@ func parseStakeTx(args []string) (protocol.Transaction, error) {
 	//logger.Println("\n Pubkey from ParseStakeTx: ", accountPubKey[:])
 	//logger.Println("\nHashed Pubkey from ParseStakeTx: ", SerializeHashContent(accountPubKey[:]))
 
-	tx, err := protocol.ConstrStakeTx(
+	var isStakingAsBool bool
+	if isStaking == 0 {
+		isStakingAsBool = false
+	} else {
+		isStakingAsBool = true
+	}
+
+	tx, err = protocol.ConstrStakeTx(
 		byte(header),
 		uint64(fee),
-		isStaking != 0,
+		isStakingAsBool,
 		hashedSeed,
 		protocol.SerializeHashContent(accountPubKey[:]),
 		&privKey,
