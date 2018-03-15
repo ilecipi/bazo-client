@@ -59,9 +59,6 @@ func checkForNewBlockHeaders(initial bool, youngestBlock *protocol.Block, eldest
 
 		}
 
-		loaded = checkForNewBlockHeaders(initial, ancestor, eldestHash, loaded)
-		loaded = append(loaded, youngestBlock)
-
 		if initial {
 			logger.Printf("Header %v loaded\n", cnt)
 			cnt++
@@ -77,6 +74,9 @@ func checkForNewBlockHeaders(initial bool, youngestBlock *protocol.Block, eldest
 				youngestBlock.NrConfigTx,
 				youngestBlock.NrConfigTx)
 		}
+
+		loaded = checkForNewBlockHeaders(initial, ancestor, eldestHash, loaded)
+		loaded = append(loaded, youngestBlock)
 	}
 
 	return loaded
