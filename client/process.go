@@ -145,7 +145,15 @@ func parseFundsTx(args []string) (tx protocol.Transaction, err error) {
 
 	toPubKey, _, err := storage.ExtractKeyFromFile(args[5])
 	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
+		if len(args[5]) == 128 {
+			runes := []rune(args[5])
+			pub1 := string(runes[:64])
+			pub2 := string(runes[64:])
+
+			toPubKey, _ = storage.GetPubKeyFromString(pub1, pub2)
+		} else {
+			return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
+		}
 	}
 
 	_, multiSigPrivKey, err := storage.ExtractKeyFromFile(args[6])
