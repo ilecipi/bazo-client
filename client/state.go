@@ -50,14 +50,8 @@ func updateBlockHeader(initial bool) {
 }
 
 //Get new blockheaders recursively
-func checkForNewBlockHeaders(initial bool, youngestBlock *protocol.Block, eldestHash [32]byte, loaded []*protocol.Block) []*protocol.Block {
-	if youngestBlock.Hash != eldestHash && youngestBlock.Hash != [32]byte{} {
-		var ancestor *protocol.Block
-
-		if ancestor = reqBlockHeader(youngestBlock.PrevHash[:]); ancestor == nil {
-			logger.Printf("Refreshing state failed.")
-
-		}
+func checkForNewBlockHeaders(initial bool, latest *protocol.Block, lastLoaded [32]byte, loaded []*protocol.Block) []*protocol.Block {
+	if latest.Hash != lastLoaded {
 
 		if initial {
 			logger.Printf("Header %v loaded\n", cnt)
@@ -68,15 +62,20 @@ func checkForNewBlockHeaders(initial bool, youngestBlock *protocol.Block, eldest
 				"NrAccTx: %v\n"+
 				"NrConfigTx: %v\n"+
 				"NrStakeTx: %v\n",
-				youngestBlock.Hash[:8],
-				youngestBlock.NrFundsTx,
-				youngestBlock.NrAccTx,
-				youngestBlock.NrConfigTx,
-				youngestBlock.NrConfigTx)
+				latest.Hash[:8],
+				latest.NrFundsTx,
+				latest.NrAccTx,
+				latest.NrConfigTx,
+				latest.NrConfigTx)
 		}
 
-		loaded = checkForNewBlockHeaders(initial, ancestor, eldestHash, loaded)
-		loaded = append(loaded, youngestBlock)
+		var ancestor *protocol.Block
+		if ancestor = reqBlockHeader(latest.PrevHash[:]); ancestor == nil {
+			logger.Printf("Refreshing state failed.")
+		}
+
+		loaded = checkForNewBlockHeaders(initial, ancestor, lastLoaded, loaded)
+		loaded = append(loaded, latest)
 	}
 
 	return loaded
