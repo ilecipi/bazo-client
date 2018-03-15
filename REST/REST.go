@@ -27,6 +27,8 @@ func Init() {
 }
 
 func getEndpoints(router *mux.Router) {
+	logger.Println("Incoming request REST")
+
 	router.HandleFunc("/account/{id}", GetAccountEndpoint).Methods("GET")
 
 	router.HandleFunc("/createAccTx/{header}/{fee}/{issuer}", CreateAccTxEndpoint).Methods("POST")
