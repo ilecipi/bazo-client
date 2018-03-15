@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"crypto/ecdsa"
 )
 
 const (
@@ -42,23 +43,35 @@ func parseAccTx(args []string) (tx protocol.Transaction, err error) {
 		return nil, errors.New(fmt.Sprintf("Output file exists.%v", accTxUsage))
 	}
 
-	//Write the public key to the given textfile
-	file, err := os.Create(args[3])
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
-	}
+	if len(args[3]) == 128 {
+		var newAddress [64]byte
+		newPubInt, _ := new(big.Int).SetString(args[3], 16)
+		copy(newAddress[:], newPubInt.Bytes())
 
-	tx, newKey, err := protocol.ConstrAccTx(byte(header), uint64(fee), &privKey)
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
-	}
+		tx, _, err = protocol.ConstrAccTx(byte(header), uint64(fee), newAddress, &privKey)
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
+		}
+	} else {
+		var newKey *ecdsa.PrivateKey
+		//Write the public key to the given textfile
+		file, err := os.Create(args[3])
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
+		}
 
-	_, err = file.WriteString(string(newKey.X.Text(16)) + "\n")
-	_, err = file.WriteString(string(newKey.Y.Text(16)) + "\n")
-	_, err = file.WriteString(string(newKey.D.Text(16)) + "\n")
+		tx, newKey, err = protocol.ConstrAccTx(byte(header), uint64(fee), [64]byte{}, &privKey)
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
+		}
 
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Failed to write key to file%v", accTxUsage))
+		_, err = file.WriteString(string(newKey.X.Text(16)) + "\n")
+		_, err = file.WriteString(string(newKey.Y.Text(16)) + "\n")
+		_, err = file.WriteString(string(newKey.D.Text(16)) + "\n")
+
+		if err != nil {
+			return nil, errors.New(fmt.Sprintf("Failed to write key to file%v", accTxUsage))
+		}
 	}
 
 	return tx, nil
