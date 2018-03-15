@@ -28,6 +28,8 @@ type Content struct {
 }
 
 func CreateAccTxEndpoint(w http.ResponseWriter, req *http.Request) {
+	logger.Println("Incoming createAcc request")
+
 	params := mux.Vars(req)
 
 	header, _ := strconv.Atoi(params["header"])
@@ -58,6 +60,8 @@ func CreateAccTxEndpoint(w http.ResponseWriter, req *http.Request) {
 }
 
 func CreateAccTxEndpointWithPubKey(w http.ResponseWriter, req *http.Request) {
+	logger.Println("Incoming createAcc request")
+
 	params := mux.Vars(req)
 
 	header, _ := strconv.Atoi(params["header"])
@@ -82,6 +86,8 @@ func CreateAccTxEndpointWithPubKey(w http.ResponseWriter, req *http.Request) {
 }
 
 func CreateConfigTxEndpoint(w http.ResponseWriter, req *http.Request) {
+	logger.Println("Incoming createConfig request")
+
 	params := mux.Vars(req)
 
 	header, _ := strconv.Atoi(params["header"])
@@ -107,6 +113,8 @@ func CreateConfigTxEndpoint(w http.ResponseWriter, req *http.Request) {
 }
 
 func CreateFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
+	logger.Println("Incoming createFunds request")
+
 	params := mux.Vars(req)
 
 	var fromPub [64]byte
@@ -146,13 +154,14 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 
 	var txHash [32]byte
 	var txSign [64]byte
+	var err error
 
 	txHashInt, _ := new(big.Int).SetString(params["txHash"], 16)
 	copy(txHash[:], txHashInt.Bytes())
 	txSignInt, _ := new(big.Int).SetString(params["txSign"], 16)
 	copy(txSign[:], txSignInt.Bytes())
 
-	var err error
+	logger.Printf("Incoming sendTx request for tx: %x", txHash)
 
 	switch txType {
 	case p2p.ACCTX_BRDCST:
