@@ -1,15 +1,18 @@
 package client
 
 import (
+	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/miner"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/boltdb/bolt"
 	"time"
 )
 
 var (
 	//All blockheaders of the whole chain
 	blockHeaders     []*protocol.Block
+	db               *bolt.DB
 	cnt              uint32
 	activeParameters miner.Parameters
 	UnsignedAccTx    = make(map[[32]byte]*protocol.AccTx)
@@ -19,7 +22,25 @@ var (
 
 //Load initially all block headers and invert them (first oldest, last latest)
 func InitState() {
+	db, err = bolt.Open("client.db", 0600, &bolt.Options{Timeout: 5 * time.Second})
+
+	db.Update(func(tx *bolt.Tx) error {
+		_, err = tx.CreateBucket([]byte("blockheaders"))
+		if err != nil {
+			return fmt.Errorf("Create bucket: %s", err)
+		}
+		return nil
+	})
+	db.Update(func(tx *bolt.Tx) error {
+		_, err = tx.CreateBucket([]byte("lastblockheader"))
+		if err != nil {
+			return fmt.Errorf("Create bucket: %s", err)
+		}
+		return nil
+	})
+
 	cnt = 0
+	loadBlockHeadersDB()
 	updateBlockHeader(true)
 
 	go refreshState()
@@ -42,6 +63,12 @@ func updateBlockHeader(initial bool) {
 		if len(blockHeaders) > 0 {
 			loaded = checkForNewBlockHeaders(initial, youngest, blockHeaders[len(blockHeaders)-1].Hash, loaded)
 		} else {
+			genesisBlockHeader := new(protocol.Block)
+
+			WriteBlockHeader(genesisBlockHeader)
+			WriteLastBlockHeader(genesisBlockHeader)
+
+			loaded = append(loaded, genesisBlockHeader)
 			loaded = checkForNewBlockHeaders(initial, youngest, [32]byte{}, loaded)
 		}
 
@@ -49,18 +76,39 @@ func updateBlockHeader(initial bool) {
 	}
 }
 
-//Get new blockheaders recursively
-func checkForNewBlockHeaders(initial bool, youngestBlock *protocol.Block, eldestHash [32]byte, loaded []*protocol.Block) []*protocol.Block {
-	if youngestBlock.Hash != eldestHash && youngestBlock.Hash != [32]byte{} {
-		var ancestor *protocol.Block
+func loadBlockHeadersDB() {
+	if nextBlockHeader := ReadLastBlockHeader(); nextBlockHeader != nil {
+		hasNext := true
 
-		if ancestor = reqBlockHeader(youngestBlock.PrevHash[:]); ancestor == nil {
-			logger.Printf("Refreshing state failed.")
+		blockHeaders = append(blockHeaders, nextBlockHeader)
+		logger.Printf("Header %v loaded (DB): %x, %x", cnt, nextBlockHeader.Hash, nextBlockHeader.PrevHash)
+		cnt++
 
+		if nextBlockHeader.Hash != [32]byte{} {
+			for hasNext {
+				nextBlockHeader = ReadBlockHeader(nextBlockHeader.PrevHash)
+
+				blockHeaders = append(blockHeaders, nextBlockHeader)
+				logger.Printf("Header %v loaded (DB): %x, %x", cnt, nextBlockHeader.Hash, nextBlockHeader.PrevHash)
+				cnt++
+
+				if nextBlockHeader.Hash == [32]byte{} {
+					hasNext = false
+				}
+			}
 		}
+	}
+
+	miner.InvertBlockArray(blockHeaders)
+}
+
+//Get new blockheaders recursively
+func checkForNewBlockHeaders(initial bool, latest *protocol.Block, lastLoaded [32]byte, loaded []*protocol.Block) []*protocol.Block {
+	if latest.Hash != lastLoaded {
+		WriteBlockHeader(latest)
 
 		if initial {
-			logger.Printf("Header %v loaded\n", cnt)
+			logger.Printf("Header %v loaded: %x, %x", cnt, latest.Hash, latest.PrevHash)
 			cnt++
 		} else {
 			logger.Printf("Header: %x loaded\n"+
@@ -68,15 +116,22 @@ func checkForNewBlockHeaders(initial bool, youngestBlock *protocol.Block, eldest
 				"NrAccTx: %v\n"+
 				"NrConfigTx: %v\n"+
 				"NrStakeTx: %v\n",
-				youngestBlock.Hash[:8],
-				youngestBlock.NrFundsTx,
-				youngestBlock.NrAccTx,
-				youngestBlock.NrConfigTx,
-				youngestBlock.NrConfigTx)
+				latest.Hash[:8],
+				latest.NrFundsTx,
+				latest.NrAccTx,
+				latest.NrConfigTx,
+				latest.NrConfigTx)
 		}
 
-		loaded = checkForNewBlockHeaders(initial, ancestor, eldestHash, loaded)
-		loaded = append(loaded, youngestBlock)
+		var ancestor *protocol.Block
+		if ancestor = reqBlockHeader(latest.PrevHash[:]); ancestor == nil {
+			logger.Printf("Refreshing state failed.")
+		}
+
+		loaded = checkForNewBlockHeaders(initial, ancestor, lastLoaded, loaded)
+		loaded = append(loaded, latest)
+		WriteLastBlockHeader(latest)
+		DeleteLastBlockHeader(latest.PrevHash)
 	}
 
 	return loaded
