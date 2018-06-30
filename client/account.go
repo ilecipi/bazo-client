@@ -39,7 +39,8 @@ func GetAccount(address [64]byte) (*Account, []*FundsTxJson, error) {
 	//Add the initial root's balance
 	if acc.IsCreated == false && acc.IsRoot == true {
 		acc.IsCreated = true
-		acc.Balance += miner.INITIALINITROOTBALANCE
+		//TODO Take balance from active param
+		acc.Balance += 1000 //staking_min + 1
 	}
 
 	if acc.IsCreated == false {
