@@ -7,7 +7,6 @@ import (
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"os"
 )
 
 var (
@@ -15,8 +14,7 @@ var (
 )
 
 func Init() {
-	logger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
-
+	logger = client.InitLogging()
 	client.InitState()
 
 	logger.Printf("%v\n\n", "Starting REST...")

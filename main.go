@@ -12,6 +12,7 @@ func main() {
 		if os.Args[1] == "accTx" || os.Args[1] == "fundsTx" || os.Args[1] == "configTx" || os.Args[1] == "stakeTx" {
 			client.Process(os.Args[1:])
 		} else {
+			client.InitState()
 			client.State(os.Args[1])
 		}
 	} else {

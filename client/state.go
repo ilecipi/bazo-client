@@ -5,6 +5,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"time"
+	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 var (
@@ -19,6 +20,11 @@ var (
 
 //Load initially all block headers and invert them (first oldest, last latest)
 func InitState() {
+	_, err := initiateNewClientConnection(storage.BOOTSTRAP_SERVER)
+	if err != nil {
+		logger.Fatal("Initiating new miner connection failed: %v", err)
+	}
+
 	cnt = 0
 	updateBlockHeader(true)
 

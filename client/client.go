@@ -20,7 +20,8 @@ const (
 )
 
 func Init() {
-	logger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+	p2p.InitLogging()
+	logger = InitLogging()
 }
 
 func State(keyFile string) {

@@ -249,9 +249,6 @@ func parseStakeTx(args []string) (tx protocol.Transaction, err error) {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, stakeTxUsage))
 	}
 
-	//logger.Println("\n Pubkey from ParseStakeTx: ", accountPubKey[:])
-	//logger.Println("\nHashed Pubkey from ParseStakeTx: ", SerializeHashContent(accountPubKey[:]))
-
 	var isStakingAsBool bool
 	if isStaking == 0 {
 		isStakingAsBool = false

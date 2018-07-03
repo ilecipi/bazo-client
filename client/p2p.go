@@ -6,6 +6,9 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
+	"net"
+	"strings"
+	"strconv"
 )
 
 const (
@@ -18,13 +21,47 @@ const (
 	MULTISIG_SERVER      = MULTISIG_SERVER_IP + MULTISIG_SERVER_PORT
 )
 
+func initiateNewClientConnection(dial string) (*p2p.Peer, error) {
+	var conn net.Conn
+
+	//Open up a tcp dial and instantiate a peer struct, wait for adding it to the peerStruct before we finalize
+	//the handshake
+	conn, err := net.Dial("tcp", dial)
+	if err != nil {
+		return nil, err
+	}
+
+	p := p2p.NewPeer(conn, strings.Split(dial, ":")[1], p2p.PEERTYPE_CLIENT)
+
+	//Extracts the port from our localConn variable (which is in the form IP:Port)
+	localPort, err := strconv.Atoi(strings.Split(LIGHT_CLIENT_SERVER_PORT, ":")[1])
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("Parsing port failed: %v\n", err))
+	}
+
+	packet, err := p2p.PrepareHandshake(p2p.CLIENT_PING, localPort)
+	if err != nil {
+		return nil, err
+	}
+
+	conn.Write(packet)
+
+	//Wait for the other party to finish the handshake with the corresponding message
+	header, _, err := p2p.RcvData(p)
+	if err != nil || header.TypeID != p2p.CLIENT_PONG {
+		return nil, errors.New(fmt.Sprintf("Failed to complete miner handshake: %v", err))
+	}
+
+	return p, nil
+}
+
 func reqBlock(blockHash [32]byte) (block *protocol.Block) {
 	if conn := p2p.Connect(storage.BOOTSTRAP_SERVER); conn != nil {
 
 		packet := p2p.BuildPacket(p2p.BLOCK_REQ, blockHash[:])
 		conn.Write(packet)
 
-		header, payload, err := p2p.RcvData(conn)
+		header, payload, err := p2p.RcvData_(conn)
 		if err != nil || header.TypeID != p2p.BLOCK_RES {
 			logger.Printf("Requesting block failed.")
 			return
@@ -44,7 +81,7 @@ func reqTx(txType uint8, txHash [32]byte) (tx protocol.Transaction) {
 		packet := p2p.BuildPacket(txType, txHash[:])
 		conn.Write(packet)
 
-		header, payload, err := p2p.RcvData(conn)
+		header, payload, err := p2p.RcvData_(conn)
 		if err != nil {
 			logger.Printf("Requesting tx failed.")
 			return
@@ -84,7 +121,7 @@ func reqIntermediateNodes(blockHash [32]byte, txHash [32]byte) (nodes [][32]byte
 		packet := p2p.BuildPacket(p2p.INTERMEDIATE_NODES_REQ, protocol.Encode(data, 32))
 		conn.Write(packet)
 
-		header, payload, err := p2p.RcvData(conn)
+		header, payload, err := p2p.RcvData_(conn)
 		if err != nil || header.TypeID != p2p.INTERMEDIATE_NODES_RES {
 			logger.Printf("Requesting intermediate nodes failed.")
 			return
@@ -108,7 +145,7 @@ func reqBlockHeader(blockHash []byte) (blockHeader *protocol.Block) {
 		packet := p2p.BuildPacket(p2p.BLOCK_HEADER_REQ, blockHash)
 		conn.Write(packet)
 
-		header, payload, err := p2p.RcvData(conn)
+		header, payload, err := p2p.RcvData_(conn)
 		if err != nil || header.TypeID != p2p.BlOCK_HEADER_RES {
 			logger.Printf("Requesting block header failed.")
 			return
@@ -128,7 +165,7 @@ func ReqAcc(accountHash [32]byte) (acc *protocol.Account) {
 		packet := p2p.BuildPacket(p2p.ACC_REQ, accountHash[:])
 		conn.Write(packet)
 
-		header, payload, err := p2p.RcvData(conn)
+		header, payload, err := p2p.RcvData_(conn)
 		if err != nil || header.TypeID != p2p.ACC_RES {
 			logger.Printf("Requesting account failed.")
 			return nil
@@ -148,7 +185,7 @@ func reqRootAcc(accountHash [32]byte) (rootAcc *protocol.Account) {
 		packet := p2p.BuildPacket(p2p.ROOTACC_REQ, accountHash[:])
 		conn.Write(packet)
 
-		_, payload, err := p2p.RcvData(conn)
+		_, payload, err := p2p.RcvData_(conn)
 		if err != nil {
 			logger.Printf("Requesting root account failed.")
 			return nil
@@ -167,7 +204,7 @@ func reqNonVerifiedTx(addressHash [32]byte) (nonVerifiedTxs []*protocol.FundsTx)
 		packet := p2p.BuildPacket(p2p.FUNDSTX_REQ, addressHash[:])
 		conn.Write(packet)
 
-		header, payload, err := p2p.RcvData(conn)
+		header, payload, err := p2p.RcvData_(conn)
 		if err != nil || header.TypeID != p2p.FUNDSTX_RES {
 			logger.Printf("Requesting non verified tx failed.")
 			return nil
@@ -187,7 +224,7 @@ func SendTx(dial string, tx protocol.Transaction, typeID uint8) (err error) {
 		packet := p2p.BuildPacket(typeID, tx.Encode())
 		conn.Write(packet)
 
-		header, payload, err := p2p.RcvData(conn)
+		header, payload, err := p2p.RcvData_(conn)
 		if err != nil || header.TypeID == p2p.NOT_FOUND {
 			err = errors.New(string(payload[:]))
 		}
