@@ -1,93 +1,111 @@
 package client
 
 import (
+	"fmt"
+	"github.com/bazo-blockchain/bazo-client/network"
 	"github.com/bazo-blockchain/bazo-miner/miner"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"time"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 )
 
 var (
 	//All blockheaders of the whole chain
-	blockHeaders     []*protocol.Block
-	cnt              uint32
+	blockHeaders []*protocol.Block
+
 	activeParameters miner.Parameters
+
 	UnsignedAccTx    = make(map[[32]byte]*protocol.AccTx)
 	UnsignedConfigTx = make(map[[32]byte]*protocol.ConfigTx)
 	UnsignedFundsTx  = make(map[[32]byte]*protocol.FundsTx)
 )
 
-//Load initially all block headers and invert them (first oldest, last latest)
-func InitState() {
-	_, err := initiateNewClientConnection(storage.BOOTSTRAP_SERVER)
-	if err != nil {
-		logger.Fatal("Initiating new miner connection failed: %v", err)
-	}
-
-	cnt = 0
-	updateBlockHeader(true)
-
-	go refreshState()
-}
-
 //Update allBlockHeaders to the latest header
-func refreshState() {
-	for {
-		time.Sleep(10 * time.Second)
+func sync() {
+	update()
 
-		updateBlockHeader(false)
-	}
+	go incomingBlockHeaders()
 }
 
-func updateBlockHeader(initial bool) {
-	var loaded []*protocol.Block
-	if youngest := reqBlockHeader(nil); youngest == nil {
-		logger.Printf("Refreshing state failed.")
-	} else {
-		if len(blockHeaders) > 0 {
-			loaded = checkForNewBlockHeaders(initial, youngest, blockHeaders[len(blockHeaders)-1].Hash, loaded)
-		} else {
-			loaded = checkForNewBlockHeaders(initial, youngest, [32]byte{}, loaded)
-		}
+func update() {
+	time.Sleep(10 * time.Second)
 
-		blockHeaders = append(blockHeaders, loaded...)
+	var loaded []*protocol.Block
+	var youngest *protocol.Block
+
+	youngest = loadBlockHeader(nil)
+	if youngest == nil {
+		logger.Fatal()
 	}
+	if len(blockHeaders) > 0 {
+		loaded = checkForNewBlockHeaders(youngest, blockHeaders[len(blockHeaders)-1].Hash, loaded)
+	} else {
+		loaded = checkForNewBlockHeaders(youngest, [32]byte{}, loaded)
+	}
+
+	blockHeaders = append(blockHeaders, loaded...)
 }
 
 //Get new blockheaders recursively
-func checkForNewBlockHeaders(initial bool, latest *protocol.Block, lastLoaded [32]byte, loaded []*protocol.Block) []*protocol.Block {
+func checkForNewBlockHeaders(latest *protocol.Block, lastLoaded [32]byte, loaded []*protocol.Block) []*protocol.Block {
 	if latest.Hash != lastLoaded {
 
-		if initial {
-			logger.Printf("Header %v loaded\n", cnt)
-			cnt++
-		} else {
-			logger.Printf("Header: %x loaded\n"+
-				"NrFundsTx: %v\n"+
-				"NrAccTx: %v\n"+
-				"NrConfigTx: %v\n"+
-				"NrStakeTx: %v\n",
-				latest.Hash[:8],
-				latest.NrFundsTx,
-				latest.NrAccTx,
-				latest.NrConfigTx,
-				latest.NrConfigTx)
-		}
+		logger.Printf("Header: %x loaded\n"+
+			"NrFundsTx: %v\n"+
+			"NrAccTx: %v\n"+
+			"NrConfigTx: %v\n"+
+			"NrStakeTx: %v\n",
+			latest.Hash[:8],
+			latest.NrFundsTx,
+			latest.NrAccTx,
+			latest.NrConfigTx,
+			latest.NrConfigTx)
 
 		var ancestor *protocol.Block
-		if ancestor = reqBlockHeader(latest.PrevHash[:]); ancestor == nil {
-			logger.Printf("Refreshing state failed.")
+		ancestor = loadBlockHeader(latest.PrevHash[:])
+		if ancestor == nil {
+			//Try again
+			ancestor = latest
 		}
 
-		loaded = checkForNewBlockHeaders(initial, ancestor, lastLoaded, loaded)
+		loaded = checkForNewBlockHeaders(ancestor, lastLoaded, loaded)
 		loaded = append(loaded, latest)
 	}
 
 	return loaded
 }
 
-func getState(acc *Account, lastTenTx []*FundsTxJson) error {
+func loadBlockHeader(blockHash []byte) (blockHeader *protocol.Block) {
+	var errormsg string
+	if blockHash != nil {
+		errormsg = fmt.Sprintf("Loading block header %x failed: ", blockHash[:8])
+	}
+
+	err := network.BlockHeaderReq(blockHash[:])
+	if err != nil {
+		logger.Println(errormsg + err.Error())
+		return nil
+	}
+
+	blockHeaderI, err := network.Fetch(network.BlockHeaderChan)
+	if err != nil {
+		logger.Println(errormsg + err.Error())
+		return nil
+	}
+
+	blockHeader = blockHeaderI.(*protocol.Block)
+
+	return blockHeader
+}
+
+func incomingBlockHeaders() {
+	for {
+		blockHeader := <-network.BlockHeaderIn
+		blockHeaders = append(blockHeaders, blockHeader)
+	}
+}
+
+func getState(acc *Account, lastTenTx []*FundsTxJson) (err error) {
 	pubKeyHash := protocol.SerializeHashContent(acc.Address)
 
 	//Get blocks if the Acc address:
@@ -96,7 +114,7 @@ func getState(acc *Account, lastTenTx []*FundsTxJson) error {
 	//* received funds
 	//* is block's beneficiary
 	//* nr of configTx in block is > 0 (in order to maintain params in light-client)
-	relevantBlocks := getRelevantBlocks(acc.Address)
+	relevantBlocks, err := getRelevantBlocks(acc.Address)
 
 	for _, block := range relevantBlocks {
 		if block != nil {
@@ -107,8 +125,18 @@ func getState(acc *Account, lastTenTx []*FundsTxJson) error {
 
 			//Balance funds and collect fee
 			for _, txHash := range block.FundsTxData {
-				tx := reqTx(p2p.FUNDSTX_REQ, txHash)
-				fundsTx := tx.(*protocol.FundsTx)
+				err := network.TxReq(p2p.FUNDSTX_REQ, txHash)
+				if err != nil {
+					return err
+				}
+
+				txI, err := network.Fetch(network.FundsTxChan)
+				if err != nil {
+					return err
+				}
+
+				tx := txI.(protocol.Transaction)
+				fundsTx := txI.(*protocol.FundsTx)
 
 				if fundsTx.From == pubKeyHash || fundsTx.To == pubKeyHash || block.Beneficiary == pubKeyHash {
 					//Validate tx
@@ -140,8 +168,18 @@ func getState(acc *Account, lastTenTx []*FundsTxJson) error {
 
 			//Check if Account was issued and collect fee
 			for _, txHash := range block.AccTxData {
-				tx := reqTx(p2p.ACCTX_REQ, txHash)
-				accTx := tx.(*protocol.AccTx)
+				err := network.TxReq(p2p.ACCTX_REQ, txHash)
+				if err != nil {
+					return err
+				}
+
+				txI, err := network.Fetch(network.AccTxChan)
+				if err != nil {
+					return err
+				}
+
+				tx := txI.(protocol.Transaction)
+				accTx := txI.(*protocol.AccTx)
 
 				if accTx.PubKey == acc.Address || block.Beneficiary == pubKeyHash {
 					//Validate tx
@@ -161,8 +199,19 @@ func getState(acc *Account, lastTenTx []*FundsTxJson) error {
 
 			//Update config parameters and collect fee
 			for _, txHash := range block.ConfigTxData {
-				tx := reqTx(p2p.CONFIGTX_REQ, txHash)
-				configTx := tx.(*protocol.ConfigTx)
+				err := network.TxReq(p2p.CONFIGTX_REQ, txHash)
+				if err != nil {
+					return err
+				}
+
+				txI, err := network.Fetch(network.ConfigTxChan)
+				if err != nil {
+					return err
+				}
+
+				tx := txI.(protocol.Transaction)
+				configTx := txI.(*protocol.ConfigTx)
+
 				configTxSlice := []*protocol.ConfigTx{configTx}
 
 				if block.Beneficiary == pubKeyHash {
@@ -193,29 +242,4 @@ func getState(acc *Account, lastTenTx []*FundsTxJson) error {
 	}
 
 	return nil
-}
-
-func getRelevantBlocks(pubKey [64]byte) (relevantBlocks []*protocol.Block) {
-	for _, blockHash := range getRelevantBlockHashes(pubKey) {
-		if block := reqBlock(blockHash); block != nil {
-			relevantBlocks = append(relevantBlocks, block)
-		}
-	}
-
-	return relevantBlocks
-}
-
-func getRelevantBlockHashes(pubKey [64]byte) (relevantBlockHashes [][32]byte) {
-	pubKeyHash := protocol.SerializeHashContent(pubKey)
-	for _, blockHeader := range blockHeaders {
-		//Block is relevant if:
-		//account is beneficary or
-		//account is in bloomfilter (all addresses involved in acctx/fundstx) or
-		//config state changed
-		if blockHeader.NrConfigTx > 0 || (blockHeader.NrElementsBF > 0 && blockHeader.BloomFilter.Test(pubKeyHash[:])) {
-			relevantBlockHashes = append(relevantBlockHashes, blockHeader.Hash)
-		}
-	}
-
-	return relevantBlockHashes
 }

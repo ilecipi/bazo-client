@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-client/client"
+	"github.com/bazo-blockchain/bazo-client/util"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
@@ -190,7 +191,7 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 		if tx := client.UnsignedFundsTx[txHash]; tx != nil {
 			if tx.Sig1 == [64]byte{} {
 				tx.Sig1 = txSign
-				err = client.SendTx(client.MULTISIG_SERVER, tx, p2p.FUNDSTX_BRDCST)
+				err = client.SendTx(util.MULTISIG_SERVER, tx, p2p.FUNDSTX_BRDCST)
 				if err != nil {
 					delete(client.UnsignedFundsTx, txHash)
 				}

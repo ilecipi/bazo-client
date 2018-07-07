@@ -1,6 +1,7 @@
 package client
 
 import (
+	"github.com/bazo-blockchain/bazo-client/util"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
@@ -21,31 +22,10 @@ const (
 
 func Init() {
 	p2p.InitLogging()
-	logger = InitLogging()
+	logger = util.InitLogger()
 }
 
-func State(keyFile string) {
-	pubKey, _, err := storage.ExtractKeyFromFile(keyFile)
-	if err != nil {
-		logger.Printf("%v\n%v", err, USAGE_MSG)
-		return
-	}
-
-	InitState()
-
-	accAddress := storage.GetAddressFromPubKey(&pubKey)
-
-	logger.Printf("My address: %x\n", accAddress)
-
-	acc, _, err := GetAccount(accAddress)
-	if err != nil {
-		logger.Println(err)
-	} else {
-		logger.Printf(acc.String())
-	}
-}
-
-func Process(args []string) {
+func ProcessTx(args []string) {
 	switch args[0] {
 	case "accTx":
 		tx, err = parseAccTx(os.Args[2:])
@@ -70,4 +50,29 @@ func Process(args []string) {
 	} else {
 		logger.Printf("Transaction successfully sent to network:%v", tx)
 	}
+}
+
+func ProcessState(fileName string) {
+	pubKey, _, err := storage.ExtractKeyFromFile(fileName)
+	if err != nil {
+		logger.Printf("%v\n%v", err, USAGE_MSG)
+		return
+	}
+
+	update()
+
+	accAddress := storage.GetAddressFromPubKey(&pubKey)
+
+	logger.Printf("My address: %x\n", accAddress)
+
+	acc, _, err := GetAccount(accAddress)
+	if err != nil {
+		logger.Println(err)
+	} else {
+		logger.Printf(acc.String())
+	}
+}
+
+func Sync() {
+	sync()
 }
