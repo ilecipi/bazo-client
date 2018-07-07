@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/bazo-blockchain/bazo-client/network"
 	"github.com/bazo-blockchain/bazo-miner/miner"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
@@ -26,7 +27,11 @@ func GetAccount(address [64]byte) (*Account, []*FundsTxJson, error) {
 	activeParameters = miner.NewDefaultParameters()
 
 	//If Acc is Root in the bazo network state, we do not check for accTx, else we check
-	if rootAcc := reqRootAcc(protocol.SerializeHashContent(acc.Address)); rootAcc != nil {
+	network.AccReq(true, protocol.SerializeHashContent(acc.Address))
+
+	rootAccI, _ := network.Fetch(network.AccChan)
+	rootAcc := rootAccI.(*protocol.Account)
+	if rootAcc != nil {
 		acc.IsRoot = true
 	}
 

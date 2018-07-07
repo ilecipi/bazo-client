@@ -61,11 +61,11 @@ func ProcessState(fileName string) {
 
 	update()
 
-	accAddress := storage.GetAddressFromPubKey(&pubKey)
+	address := storage.GetAddressFromPubKey(&pubKey)
 
-	logger.Printf("My address: %x\n", accAddress)
+	logger.Printf("My address: %x\n", address)
 
-	acc, _, err := GetAccount(accAddress)
+	acc, _, err := GetAccount(address)
 	if err != nil {
 		logger.Println(err)
 	} else {

@@ -6,20 +6,30 @@ import (
 )
 
 var (
+	Uptodate      = false
 	BlockHeaderIn = make(chan *protocol.Block)
 
-	BlockChan       = make(chan interface{})
-	BlockHeaderChan = make(chan interface{})
-	FundsTxChan     = make(chan interface{})
-	AccTxChan       = make(chan interface{})
-	ConfigTxChan    = make(chan interface{})
-	StakeTxChan     = make(chan interface{})
+	BlockChan             = make(chan interface{})
+	BlockHeaderChan       = make(chan interface{})
+	FundsTxChan           = make(chan interface{})
+	AccTxChan             = make(chan interface{})
+	ConfigTxChan          = make(chan interface{})
+	StakeTxChan           = make(chan interface{})
+	AccChan               = make(chan interface{})
+	IntermediateNodesChan = make(chan [][32]byte)
 )
 
 func processIncomingMsg(p *peer, header *p2p.Header, payload []byte) {
 	switch header.TypeID {
+	//BROADCAST
 	case p2p.BLOCK_HEADER_BRDCST:
-		blockHeaderBrdcst(p, payload)
+		if Uptodate {
+			blockHeaderBrdcst(p, payload)
+		} else {
+			logger.Println("Broadcastet block header not processed.")
+		}
+
+		//RESULTS
 	case p2p.BLOCK_RES:
 		blockRes(p, payload)
 	case p2p.BlOCK_HEADER_RES:
@@ -32,5 +42,11 @@ func processIncomingMsg(p *peer, header *p2p.Header, payload []byte) {
 		txRes(p, payload, p2p.CONFIGTX_RES)
 	case p2p.STAKETX_RES:
 		txRes(p, payload, p2p.STAKETX_RES)
+	case p2p.ACC_RES:
+		accRes(p, payload)
+	case p2p.ROOTACC_RES:
+		accRes(p, payload)
+	case p2p.INTERMEDIATE_NODES_RES:
+		intermediateNodesRes(p, payload)
 	}
 }

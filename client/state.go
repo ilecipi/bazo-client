@@ -23,6 +23,7 @@ var (
 //Update allBlockHeaders to the latest header
 func sync() {
 	update()
+	network.Uptodate = true
 
 	go incomingBlockHeaders()
 }

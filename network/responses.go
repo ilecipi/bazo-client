@@ -59,3 +59,21 @@ func txRes(p *peer, payload []byte, txType uint8) {
 		StakeTxChan <- stakeTx
 	}
 }
+
+func accRes(p *peer, payload []byte) {
+	var acc *protocol.Account
+	acc = acc.Decode(payload)
+
+	AccChan <- acc
+}
+
+func intermediateNodesRes(p *peer, payload []byte) {
+	var nodes [][32]byte
+	for _, data := range protocol.Decode(payload, 32) {
+		var node [32]byte
+		copy(node[:], data)
+		nodes = append(nodes, node)
+	}
+
+	IntermediateNodesChan <- nodes
+}

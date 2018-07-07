@@ -3,13 +3,26 @@ package client
 import (
 	"errors"
 	"fmt"
+	"github.com/bazo-blockchain/bazo-client/network"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
+
+//TODO Validate block merkle root.
 
 func validateTx(block *protocol.Block, tx protocol.Transaction, txHash [32]byte) error {
 	valid := true
 
-	nodes := reqIntermediateNodes(block.Hash, txHash)
+	err := network.IntermediateNodesReq(block.Hash, txHash)
+	if err != nil {
+		//TODO
+		valid = false
+	}
+
+	nodes, err := network.Fetch32Bytes(network.IntermediateNodesChan)
+	if err != nil {
+		//TODO
+		valid = false
+	}
 
 	if txHash != tx.Hash() {
 		valid = false

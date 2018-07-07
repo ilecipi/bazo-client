@@ -20,6 +20,16 @@ func Fetch(channelToFetchFrom chan interface{}) (payload interface{}, err error)
 	return payload, nil
 }
 
+func Fetch32Bytes(channelToFetchFrom chan [][32]byte) (payload [][32]byte, err error) {
+	select {
+	case payload = <-channelToFetchFrom:
+	case <-time.After(miner.BLOCKFETCH_TIMEOUT * time.Second):
+		return nil, errors.New("Fetching timed out.")
+	}
+
+	return payload, nil
+}
+
 func rcvData(p *peer) (header *p2p.Header, payload []byte, err error) {
 	reader := bufio.NewReader(p.conn)
 	header, err = readHeader(reader)
