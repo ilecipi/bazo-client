@@ -27,7 +27,7 @@ func Init() {
 
 	p, err := initiateNewClientConnection(storage.BOOTSTRAP_SERVER)
 	if err != nil {
-		logger.Fatal("Initiating new network connection failed: %v", err)
+		logger.Fatal("Initiating new network connection failed: ", err)
 	}
 
 	go minerConn(p)
