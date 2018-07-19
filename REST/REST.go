@@ -20,7 +20,7 @@ func Init() {
 
 	router := mux.NewRouter()
 	getEndpoints(router)
-	log.Fatal(http.ListenAndServe(util.LIGHT_CLIENT_SERVER_PORT, handlers.CORS()(router)))
+	log.Fatal(http.ListenAndServe(util.Config.ThisIpport, handlers.CORS()(router)))
 }
 
 func getEndpoints(router *mux.Router) {

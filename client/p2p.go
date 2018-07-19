@@ -3,13 +3,13 @@ package client
 import (
 	"errors"
 	"fmt"
-	"github.com/bazo-blockchain/bazo-client/util"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
 
 func reqNonVerifiedTx(addressHash [32]byte) (nonVerifiedTxs []*protocol.FundsTx) {
-	if conn := p2p.Connect(util.MULTISIG_SERVER); conn != nil {
+	//TODO Revise connection to Multisig server
+	if conn := p2p.Connect(""); conn != nil {
 		packet := p2p.BuildPacket(p2p.FUNDSTX_REQ, addressHash[:])
 		conn.Write(packet)
 

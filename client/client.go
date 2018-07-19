@@ -23,6 +23,7 @@ const (
 func Init() {
 	p2p.InitLogging()
 	logger = util.InitLogger()
+	util.Config = util.LoadConfiguration()
 }
 
 func ProcessTx(args []string) {
@@ -45,7 +46,7 @@ func ProcessTx(args []string) {
 		return
 	}
 
-	if err := SendTx(storage.BOOTSTRAP_SERVER, tx, msgType); err != nil {
+	if err := SendTx(util.Config.BootstrapIpport, tx, msgType); err != nil {
 		logger.Printf("%v\n", err)
 	} else {
 		logger.Printf("Transaction successfully sent to network:%v", tx)

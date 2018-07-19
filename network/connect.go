@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/bazo-blockchain/bazo-client/util"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 	"log"
 	"net"
 	"strconv"
@@ -24,8 +23,9 @@ func Init() {
 	peers.minerConns = make(map[*peer]bool)
 
 	go peerService()
+	go checkHealthService()
 
-	p, err := initiateNewClientConnection(storage.BOOTSTRAP_SERVER)
+	p, err := initiateNewClientConnection(util.Config.BootstrapIpport)
 	if err != nil {
 		logger.Fatal("Initiating new network connection failed: ", err)
 	}
@@ -45,12 +45,7 @@ func initiateNewClientConnection(dial string) (*peer, error) {
 
 	p := newPeer(conn, strings.Split(dial, ":")[1])
 
-	//Extracts the port from our localConn variable (which is in the form IP:Port)
-	localPort, err := strconv.Atoi(strings.Split(util.LIGHT_CLIENT_SERVER_PORT, ":")[1])
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("Parsing port failed: %v\n", err))
-	}
-
+	localPort, _ := strconv.Atoi(util.Config.Thisclient.Port)
 	packet, err := p2p.PrepareHandshake(p2p.CLIENT_PING, localPort)
 	if err != nil {
 		return nil, err
