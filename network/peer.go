@@ -85,3 +85,13 @@ func (peers peersStruct) getAllPeers() []*peer {
 
 	return peerList
 }
+
+func (peers peersStruct) contains(ipport string) bool {
+	for peer, _ := range peers.minerConns {
+		if (peer.getIPPort() == ipport) {
+			return true
+		}
+	}
+
+	return false
+}

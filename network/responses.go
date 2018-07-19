@@ -3,6 +3,8 @@ package network
 import (
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"strconv"
+	"encoding/binary"
 )
 
 func blockHeaderBrdcst(p *peer, payload []byte) {
@@ -76,4 +78,38 @@ func intermediateNodesRes(p *peer, payload []byte) {
 	}
 
 	IntermediateNodesChan <- nodes
+}
+
+func processNeighborRes(p *peer, payload []byte) {
+
+	//Parse the incoming ipv4 addresses.
+	ipportList := _processNeighborRes(payload)
+
+	for _, ipportIter := range ipportList {
+		logger.Printf("IP/Port received: %v\n", ipportIter)
+		//iplistChan is a buffered channel to handle ips asynchronously.
+		iplistChan <- ipportIter
+	}
+}
+
+//Split the processNeighborRes function in two for cleaner testing.
+func _processNeighborRes(payload []byte) (ipportList []string) {
+	index := 0
+	for cnt := 0; cnt < len(payload)/(p2p.IPV4ADDR_SIZE+p2p.PORT_SIZE); cnt++ {
+		var addr string
+		for singleAddr := index; singleAddr < index+p2p.IPV4ADDR_SIZE; singleAddr++ {
+			tmp := int(payload[singleAddr])
+			addr += strconv.Itoa(tmp)
+			addr += "."
+		}
+		//Remove trailing dot.
+		addr = addr[:len(addr)-1]
+		addr += ":"
+		//Extract port number.
+		addr += strconv.Itoa(int(binary.BigEndian.Uint16(payload[index+4 : index+6])))
+
+		ipportList = append(ipportList, addr)
+		index += p2p.IPV4ADDR_SIZE + p2p.PORT_SIZE
+	}
+	return ipportList
 }

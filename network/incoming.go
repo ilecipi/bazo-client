@@ -8,6 +8,7 @@ import (
 var (
 	Uptodate      = false
 	BlockHeaderIn = make(chan *protocol.Block)
+	iplistChan    = make(chan string, p2p.MIN_MINERS)
 
 	BlockChan             = make(chan interface{})
 	BlockHeaderChan       = make(chan interface{})
@@ -48,5 +49,7 @@ func processIncomingMsg(p *peer, header *p2p.Header, payload []byte) {
 		accRes(p, payload)
 	case p2p.INTERMEDIATE_NODES_RES:
 		intermediateNodesRes(p, payload)
+	case p2p.NEIGHBOR_RES:
+		processNeighborRes(p, payload)
 	}
 }
