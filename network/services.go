@@ -10,6 +10,9 @@ func checkHealthService() {
 	for {
 		time.Sleep(util.HEALTH_CHECK_INTERVAL * time.Second)
 
+		//Stop trying to connect after #numberOfRetry attempts.
+		numberOfRetry := 0
+
 		if !peers.contains(util.Config.BootstrapIpport) {
 			p, err := initiateNewClientConnection(util.Config.BootstrapIpport)
 			if p == nil || err != nil {
@@ -33,9 +36,16 @@ func checkHealthService() {
 			if err != nil {
 				logger.Printf("%v\n", err)
 			}
+
 			if p == nil || err != nil {
-				goto RETRY
+				if numberOfRetry < 3 {
+					numberOfRetry++
+					goto RETRY
+				} else {
+					break
+				}
 			}
+
 			go minerConn(p)
 			break
 		default:
