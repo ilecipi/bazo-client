@@ -24,10 +24,11 @@ func processIncomingMsg(p *peer, header *p2p.Header, payload []byte) {
 	switch header.TypeID {
 	//BROADCAST
 	case p2p.BLOCK_HEADER_BRDCST:
+		//Prevent channel from blocking. Otherwise the client cannot proceed updating the headers!
 		if Uptodate {
 			blockHeaderBrdcst(p, payload)
 		} else {
-			logger.Println("Broadcastet block header not processed.")
+			logger.Println("Broadcasted block header not processed.")
 		}
 
 		//RESULTS

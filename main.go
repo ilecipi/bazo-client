@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/bazo-blockchain/bazo-client/REST"
 	"github.com/bazo-blockchain/bazo-client/client"
 	"github.com/bazo-blockchain/bazo-client/network"
 	"os"
+	"github.com/bazo-blockchain/bazo-client/REST"
 )
 
 func main() {

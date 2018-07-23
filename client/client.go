@@ -7,6 +7,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"log"
 	"os"
+	"github.com/bazo-blockchain/bazo-client/cstorage"
 )
 
 var (
@@ -24,6 +25,7 @@ func Init() {
 	p2p.InitLogging()
 	logger = util.InitLogger()
 	util.Config = util.LoadConfiguration()
+	cstorage.Init("client.db")
 }
 
 func ProcessTx(args []string) {
@@ -60,7 +62,7 @@ func ProcessState(fileName string) {
 		return
 	}
 
-	update()
+	updateBlockHeaders()
 
 	address := storage.GetAddressFromPubKey(&pubKey)
 

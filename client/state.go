@@ -7,6 +7,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"time"
+	"github.com/bazo-blockchain/bazo-client/cstorage"
 )
 
 var (
@@ -20,15 +21,15 @@ var (
 	UnsignedFundsTx  = make(map[[32]byte]*protocol.FundsTx)
 )
 
-//Update allBlockHeaders to the latest header
+//Update allBlockHeaders to the latest header. Start listening to broadcasted headers after.
 func sync() {
-	update()
-	network.Uptodate = true
+	updateBlockHeaders()
 
 	go incomingBlockHeaders()
 }
 
-func update() {
+func updateBlockHeaders() {
+	//Wait until a connection is to the network is established.
 	time.Sleep(10 * time.Second)
 
 	var loaded []*protocol.Block
@@ -37,36 +38,34 @@ func update() {
 	youngest = loadBlockHeader(nil)
 	if youngest == nil {
 		logger.Fatal()
-	}
-	if len(blockHeaders) > 0 {
-		loaded = checkForNewBlockHeaders(youngest, blockHeaders[len(blockHeaders)-1].Hash, loaded)
 	} else {
 		loaded = checkForNewBlockHeaders(youngest, [32]byte{}, loaded)
 	}
 
 	blockHeaders = append(blockHeaders, loaded...)
+
+	//The client is up to date with the network and can start listening for incoming headers.
+	network.Uptodate = true
 }
 
-//Get new blockheaders recursively
+//Load all blockheaders from latest to the lastloaded (hash) given recursively.
 func checkForNewBlockHeaders(latest *protocol.Block, lastLoaded [32]byte, loaded []*protocol.Block) []*protocol.Block {
 	if latest.Hash != lastLoaded {
-
-		logger.Printf("Header: %x loaded\n"+
-			"NrFundsTx: %v\n"+
-			"NrAccTx: %v\n"+
-			"NrConfigTx: %v\n"+
-			"NrStakeTx: %v\n",
-			latest.Hash[:8],
-			latest.NrFundsTx,
-			latest.NrAccTx,
-			latest.NrConfigTx,
-			latest.NrConfigTx)
-
 		var ancestor *protocol.Block
-		ancestor = loadBlockHeader(latest.PrevHash[:])
+
+		if ancestor = cstorage.ReadBlockHeader(latest.PrevHash); ancestor == nil {
+			ancestor = loadBlockHeader(latest.PrevHash[:])
+		}
+
 		if ancestor == nil {
 			//Try again
 			ancestor = latest
+		} else {
+			cstorage.WriteBlockHeader(ancestor)
+
+			logger.Printf("Header %x with height %v loaded\n",
+				ancestor.Hash[:8],
+				ancestor.Height)
 		}
 
 		loaded = checkForNewBlockHeaders(ancestor, lastLoaded, loaded)
@@ -101,8 +100,25 @@ func loadBlockHeader(blockHash []byte) (blockHeader *protocol.Block) {
 
 func incomingBlockHeaders() {
 	for {
-		blockHeader := <-network.BlockHeaderIn
-		blockHeaders = append(blockHeaders, blockHeader)
+		blockHeaderIn := <-network.BlockHeaderIn
+
+		cstorage.WriteBlockHeader(blockHeaderIn)
+		cstorage.WriteLastBlockHeader(blockHeaderIn)
+
+		//The incoming block header is already the last saved in the array.
+		if blockHeaderIn.Hash == blockHeaders[len(blockHeaders)-1].Hash {
+			break
+		}
+
+		if blockHeaderIn.PrevHash == blockHeaders[len(blockHeaders)-1].Hash {
+			blockHeaders = append(blockHeaders, blockHeaderIn)
+		} else {
+			//The client is out of sync. Header cannot be appended to the array. The client must sync first.
+			//Set the uptodate flag to false in order to avoid listening to new incoming block headers.
+			network.Uptodate = false
+			blockHeaders = checkForNewBlockHeaders(blockHeaderIn, blockHeaders[len(blockHeaders)-1].Hash, blockHeaders)
+			network.Uptodate = true
+		}
 	}
 }
 
