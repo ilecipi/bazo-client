@@ -16,43 +16,54 @@ type Account struct {
 	TxCnt         uint32   `json:"txCnt"`
 	IsCreated     bool     `json:"isCreated"`
 	IsRoot        bool     `json:"isRoot"`
+	IsStaking     bool     `json:"isStaking"`
 }
 
 func GetAccount(address [64]byte) (*Account, []*FundsTxJson, error) {
 	//Initialize new account with empty address
-	acc := Account{address, hex.EncodeToString(address[:]), 0, 0, false, false}
+	account := Account{address, hex.EncodeToString(address[:]), 0, 0, false, false, false}
 	var lastTenTx = make([]*FundsTxJson, 10)
 
 	//Set default params
 	activeParameters = miner.NewDefaultParameters()
 
-	//If Acc is Root in the bazo network state, we do not check for accTx, else we check
-	network.AccReq(true, protocol.SerializeHashContent(acc.Address))
-
-	rootAccI, _ := network.Fetch(network.AccChan)
-	rootAcc := rootAccI.(*protocol.Account)
-	if rootAcc != nil {
-		acc.IsRoot = true
+	network.AccReq(false, protocol.SerializeHashContent(account.Address))
+	if accI, _ := network.Fetch(network.AccChan); accI != nil {
+		if acc := accI.(*protocol.Account); acc != nil {
+			account.IsStaking = acc.IsStaking
+		}
 	}
 
-	err := getState(&acc, lastTenTx)
+	//If Acc is Root in the bazo network state, we do not check for accTx, else we check
+	network.AccReq(true, protocol.SerializeHashContent(account.Address))
+	if rootAccI, _ := network.Fetch(network.AccChan); rootAccI != nil {
+		if rootAcc := rootAccI.(*protocol.Account); rootAcc != nil {
+			account.IsRoot = true
+		}
+	}
+
+	if account.IsStaking == true {
+		return nil, nil, errors.New(fmt.Sprintf("Account %x is a validator account. Validator's state cannot be calculated at the moment. We are sorry.\n", account.Address[:8]))
+	}
+
+	err := getState(&account, lastTenTx)
 	if err != nil {
-		return nil, nil, errors.New(fmt.Sprintf("Could not calculate state of account %x: %v\n", acc.Address[:8], err))
+		return nil, nil, errors.New(fmt.Sprintf("Could not calculate state of account %x: %v\n", account.Address[:8], err))
 	}
 
 	//No accTx exists for this account since it is the initial root account
 	//Add the initial root's balance
-	if acc.IsCreated == false && acc.IsRoot == true {
-		acc.IsCreated = true
+	if account.IsCreated == false && account.IsRoot == true {
+		account.IsCreated = true
 		//TODO Take balance from active param
-		acc.Balance += 1000 //staking_min + 1
+		account.Balance += 1000 //staking_min + 1
 	}
 
-	if acc.IsCreated == false {
-		return nil, nil, errors.New(fmt.Sprintf("Account %x does not exist.\n", acc.Address[:8]))
+	if account.IsCreated == false {
+		return nil, nil, errors.New(fmt.Sprintf("Account %x does not exist.\n", account.Address[:8]))
 	}
 
-	return &acc, lastTenTx, nil
+	return &account, lastTenTx, nil
 }
 
 func (acc Account) String() string {
