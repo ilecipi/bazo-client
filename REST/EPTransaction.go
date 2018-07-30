@@ -190,8 +190,7 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 		if tx := client.UnsignedFundsTx[txHash]; tx != nil {
 			if tx.Sig1 == [64]byte{} {
 				tx.Sig1 = txSign
-				//TODO Revise connection to Multisig server
-				err = client.SendTx("", tx, p2p.FUNDSTX_BRDCST)
+				err = client.SendTx(util.Config.MultisigIpport, tx, p2p.FUNDSTX_BRDCST)
 				if err != nil {
 					delete(client.UnsignedFundsTx, txHash)
 				}

@@ -10,7 +10,8 @@ const (
 	CONFIGURATION_FILE = "configuration.json"
 
 	HEALTH_CHECK_INTERVAL = 30 //Sec
-	MIN_MINERS = 2
+	MIN_MINERS            = 1
+	FETCH_TIMEOUT         = 10 //SEC
 )
 
 var (
@@ -28,6 +29,11 @@ type Configuration struct {
 		Ip   string `json:"ip"`
 		Port string `json:"port"`
 	} `json:"bootstrap_server"`
+	MultisigIpport string
+	Multisigserver struct {
+		Ip   string `json:"ip"`
+		Port string `json:"port"`
+	} `json:"multisig_server"`
 }
 
 func LoadConfiguration() (config Configuration) {
@@ -41,5 +47,6 @@ func LoadConfiguration() (config Configuration) {
 
 	config.ThisIpport = config.Thisclient.Ip + ":" + config.Thisclient.Port
 	config.BootstrapIpport = config.Bootstrapserver.Ip + ":" + config.Bootstrapserver.Port
+	config.MultisigIpport = config.Multisigserver.Ip + ":" + config.Multisigserver.Port
 	return config
 }
