@@ -5,15 +5,15 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/bazo-blockchain/bazo-miner/miner"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"time"
+	"github.com/bazo-blockchain/bazo-client/util"
 )
 
 func Fetch(channelToFetchFrom chan interface{}) (payload interface{}, err error) {
 	select {
 	case payload = <-channelToFetchFrom:
-	case <-time.After(miner.BLOCKFETCH_TIMEOUT * time.Second):
+	case <-time.After(util.FETCH_TIMEOUT * time.Second):
 		return nil, errors.New("Fetching timed out.")
 	}
 
@@ -23,7 +23,7 @@ func Fetch(channelToFetchFrom chan interface{}) (payload interface{}, err error)
 func Fetch32Bytes(channelToFetchFrom chan [][32]byte) (payload [][32]byte, err error) {
 	select {
 	case payload = <-channelToFetchFrom:
-	case <-time.After(miner.BLOCKFETCH_TIMEOUT * time.Second):
+	case <-time.After(util.FETCH_TIMEOUT * time.Second):
 		return nil, errors.New("Fetching timed out.")
 	}
 
