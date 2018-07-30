@@ -4,6 +4,7 @@ import (
 	"errors"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
+	"github.com/bazo-blockchain/bazo-client/util"
 )
 
 func BlockReq(blockHash []byte) error {
@@ -58,6 +59,26 @@ func AccReq(root bool, addressHash [32]byte) error {
 	sendData(p, packet)
 
 	return nil
+}
+
+func NonVerifiedTxReq(addressHash [32]byte) (nonVerifiedTxs []*protocol.FundsTx) {
+	if conn := p2p.Connect(util.Config.MultisigIpport); conn != nil {
+		packet := p2p.BuildPacket(p2p.FUNDSTX_REQ, addressHash[:])
+		conn.Write(packet)
+
+		header, payload, err := p2p.RcvData_(conn)
+		if err != nil || header.TypeID != p2p.FUNDSTX_RES {
+			logger.Printf("Requesting non verified tx failed.")
+			return nil
+		}
+
+		for _, data := range protocol.Decode(payload, protocol.FUNDSTX_SIZE) {
+			var tx *protocol.FundsTx
+			nonVerifiedTxs = append(nonVerifiedTxs, tx.Decode(data))
+		}
+	}
+
+	return nonVerifiedTxs
 }
 
 func IntermediateNodesReq(blockHash [32]byte, txHash [32]byte) error {
