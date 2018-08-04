@@ -124,22 +124,20 @@ func incomingBlockHeaders() {
 
 func getState(acc *Account, lastTenTx []*FundsTxJson) (err error) {
 	pubKeyHash := protocol.SerializeHashContent(acc.Address)
-
 	//Get blocks if the Acc address:
 	//* got issued as an Acc
 	//* sent funds
 	//* received funds
 	//* is block's beneficiary
 	//* nr of configTx in block is > 0 (in order to maintain params in light-client)
-	relevantBlocks, err := getRelevantBlocks(acc.Address)
 
+	relevantHeadersBeneficiary, relevantHeadersConfigBF := getRelevantBlockHeaders(pubKeyHash)
+
+	acc.Balance += activeParameters.Block_reward * uint64(len(relevantHeadersBeneficiary))
+
+	relevantBlocks, err := getRelevantBlocks(relevantHeadersConfigBF)
 	for _, block := range relevantBlocks {
 		if block != nil {
-			//Collect block reward
-			if block.Beneficiary == pubKeyHash {
-				acc.Balance += activeParameters.Block_reward
-			}
-
 			//Balance funds and collect fee
 			for _, txHash := range block.FundsTxData {
 				err := network.TxReq(p2p.FUNDSTX_REQ, txHash)

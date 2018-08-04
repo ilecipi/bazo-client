@@ -46,9 +46,9 @@ func GetAccount(address [64]byte) (*Account, []*FundsTxJson, error) {
 		return nil, nil, errors.New(fmt.Sprintf("Account %x does not exist.\n", account.Address[:8]))
 	}
 
-	if account.IsStaking == true {
-		return nil, nil, errors.New(fmt.Sprintf("Account %x is a validator account. Validator's state cannot be calculated at the moment. We are sorry.\n", account.Address[:8]))
-	}
+	//if account.IsStaking == true {
+	//	return nil, nil, errors.New(fmt.Sprintf("Account %x is a validator account. Validator's state cannot be calculated at the moment. We are sorry.\n", account.Address[:8]))
+	//}
 
 	var lastTenTx = make([]*FundsTxJson, 10)
 	err := getState(&account, lastTenTx)
