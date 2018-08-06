@@ -14,6 +14,7 @@ import (
 	"math/big"
 	"net/http"
 	"strconv"
+	"github.com/bazo-blockchain/bazo-client/network"
 )
 
 type JsonResponse struct {
@@ -167,7 +168,7 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 	case p2p.ACCTX_BRDCST:
 		if tx := client.UnsignedAccTx[txHash]; tx != nil {
 			tx.Sig = txSign
-			err = client.SendTx(util.Config.BootstrapIpport, tx, p2p.ACCTX_BRDCST)
+			err = network.SendTx(util.Config.BootstrapIpport, tx, p2p.ACCTX_BRDCST)
 
 			//If tx was successful or not, delete it from map either way. A new tx creation is the only option to repeat.
 			delete(client.UnsignedFundsTx, txHash)
@@ -178,7 +179,7 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 	case p2p.CONFIGTX_BRDCST:
 		if tx := client.UnsignedConfigTx[txHash]; tx != nil {
 			tx.Sig = txSign
-			err = client.SendTx(util.Config.BootstrapIpport, tx, p2p.CONFIGTX_BRDCST)
+			err = network.SendTx(util.Config.BootstrapIpport, tx, p2p.CONFIGTX_BRDCST)
 
 			//If tx was successful or not, delete it from map either way. A new tx creation is the only option to repeat.
 			delete(client.UnsignedFundsTx, txHash)
@@ -190,13 +191,13 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 		if tx := client.UnsignedFundsTx[txHash]; tx != nil {
 			if tx.Sig1 == [64]byte{} {
 				tx.Sig1 = txSign
-				err = client.SendTx(util.Config.MultisigIpport, tx, p2p.FUNDSTX_BRDCST)
+				err = network.SendTx(util.Config.MultisigIpport, tx, p2p.FUNDSTX_BRDCST)
 				if err != nil {
 					delete(client.UnsignedFundsTx, txHash)
 				}
 			} else {
 				tx.Sig2 = txSign
-				err = client.SendTx(util.Config.BootstrapIpport, tx, p2p.FUNDSTX_BRDCST)
+				err = network.SendTx(util.Config.BootstrapIpport, tx, p2p.FUNDSTX_BRDCST)
 				delete(client.UnsignedFundsTx, txHash)
 			}
 		} else {

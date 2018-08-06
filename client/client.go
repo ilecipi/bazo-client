@@ -7,7 +7,8 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"log"
 	"os"
-	)
+	"github.com/bazo-blockchain/bazo-client/network"
+)
 
 var (
 	err     error
@@ -46,7 +47,7 @@ func ProcessTx(args []string) {
 		return
 	}
 
-	if err := SendTx(util.Config.BootstrapIpport, tx, msgType); err != nil {
+	if err := network.SendTx(util.Config.BootstrapIpport, tx, msgType); err != nil {
 		logger.Printf("%v\n", err)
 	} else {
 		logger.Printf("Transaction successfully sent to network:%v", tx)
