@@ -1,12 +1,13 @@
 package client
 
 import (
+	"github.com/bazo-blockchain/bazo-client/util"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"log"
 	"os"
-)
+	)
 
 var (
 	err     error
@@ -20,31 +21,12 @@ const (
 )
 
 func Init() {
-	logger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
+	p2p.InitLogging()
+	logger = util.InitLogger()
+	util.Config = util.LoadConfiguration()
 }
 
-func State(keyFile string) {
-	pubKey, _, err := storage.ExtractKeyFromFile(keyFile)
-	if err != nil {
-		logger.Printf("%v\n%v", err, USAGE_MSG)
-		return
-	}
-
-	InitState()
-
-	accAddress := storage.GetAddressFromPubKey(&pubKey)
-
-	logger.Printf("My address: %x\n", accAddress)
-
-	acc, _, err := GetAccount(accAddress)
-	if err != nil {
-		logger.Println(err)
-	} else {
-		logger.Printf(acc.String())
-	}
-}
-
-func Process(args []string) {
+func ProcessTx(args []string) {
 	switch args[0] {
 	case "accTx":
 		tx, err = parseAccTx(os.Args[2:])
@@ -64,9 +46,34 @@ func Process(args []string) {
 		return
 	}
 
-	if err := SendTx(storage.BOOTSTRAP_SERVER, tx, msgType); err != nil {
+	if err := SendTx(util.Config.BootstrapIpport, tx, msgType); err != nil {
 		logger.Printf("%v\n", err)
 	} else {
 		logger.Printf("Transaction successfully sent to network:%v", tx)
 	}
+}
+
+func ProcessState(fileName string) {
+	pubKey, _, err := storage.ExtractKeyFromFile(fileName)
+	if err != nil {
+		logger.Printf("%v\n%v", err, USAGE_MSG)
+		return
+	}
+
+	updateBlockHeaders()
+
+	address := storage.GetAddressFromPubKey(&pubKey)
+
+	logger.Printf("My address: %x\n", address)
+
+	acc, _, err := GetAccount(address)
+	if err != nil {
+		logger.Println(err)
+	} else {
+		logger.Printf(acc.String())
+	}
+}
+
+func Sync() {
+	sync()
 }

@@ -1,0 +1,14 @@
+{
+  "this_client": {
+    "ip": "127.0.0.1",
+    "port": "8010"
+  },
+  "bootstrap_server": {
+    "ip": "127.0.0.1",
+    "port": "8004"
+  },
+  "multisig_server": {
+    "ip": "127.0.0.1",
+    "port": "8020"
+  }
+}

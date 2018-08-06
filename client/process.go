@@ -2,6 +2,7 @@ package client
 
 import (
 	"bufio"
+	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
@@ -10,7 +11,6 @@ import (
 	"os"
 	"strconv"
 	"strings"
-	"crypto/ecdsa"
 )
 
 const (
@@ -248,9 +248,6 @@ func parseStakeTx(args []string) (tx protocol.Transaction, err error) {
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, stakeTxUsage))
 	}
-
-	//logger.Println("\n Pubkey from ParseStakeTx: ", accountPubKey[:])
-	//logger.Println("\nHashed Pubkey from ParseStakeTx: ", SerializeHashContent(accountPubKey[:]))
 
 	var isStakingAsBool bool
 	if isStaking == 0 {

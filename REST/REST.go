@@ -2,12 +2,11 @@ package REST
 
 import (
 	"encoding/json"
-	"github.com/bazo-blockchain/bazo-client/client"
+	"github.com/bazo-blockchain/bazo-client/util"
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
-	"os"
 )
 
 var (
@@ -15,15 +14,13 @@ var (
 )
 
 func Init() {
-	logger = log.New(os.Stdout, "INFO: ", log.Ldate|log.Ltime|log.Lshortfile)
-
-	client.InitState()
+	logger = util.InitLogger()
 
 	logger.Printf("%v\n\n", "Starting REST...")
 
 	router := mux.NewRouter()
 	getEndpoints(router)
-	log.Fatal(http.ListenAndServe(client.LIGHT_CLIENT_SERVER_PORT, handlers.CORS()(router)))
+	log.Fatal(http.ListenAndServe(util.Config.ThisIpport, handlers.CORS()(router)))
 }
 
 func getEndpoints(router *mux.Router) {
