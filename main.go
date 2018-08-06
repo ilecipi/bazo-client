@@ -5,6 +5,7 @@ import (
 	"github.com/bazo-blockchain/bazo-client/network"
 	"os"
 	"github.com/bazo-blockchain/bazo-client/REST"
+	"github.com/bazo-blockchain/bazo-client/cstorage"
 )
 
 func main() {
@@ -20,6 +21,7 @@ func main() {
 
 	//For querying an account state or starting the REST service, the client must establish a connection to the Bazo network.
 	network.Init()
+	cstorage.Init("client.db")
 
 	if len(os.Args) == 2 {
 		client.ProcessState(os.Args[1])
