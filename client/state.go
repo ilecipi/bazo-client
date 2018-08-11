@@ -52,16 +52,18 @@ func updateBlockHeaders() {
 func checkForNewBlockHeaders(latest *protocol.Block, lastLoaded [32]byte, loaded []*protocol.Block) []*protocol.Block {
 	if latest.Hash != lastLoaded {
 		var ancestor *protocol.Block
+		writeToDB := false
 
 		if ancestor = cstorage.ReadBlockHeader(latest.PrevHash); ancestor == nil {
 			ancestor = loadBlockHeader(latest.PrevHash[:])
+			writeToDB = true
 		}
 
 		if ancestor == nil {
 			//Try again
 			ancestor = latest
 		} else {
-			cstorage.WriteBlockHeader(ancestor)
+			if writeToDB {cstorage.WriteBlockHeader(ancestor)}
 
 			logger.Printf("Header %x with height %v loaded\n",
 				ancestor.Hash[:8],
@@ -112,6 +114,10 @@ func incomingBlockHeaders() {
 
 		if blockHeaderIn.PrevHash == blockHeaders[len(blockHeaders)-1].Hash {
 			blockHeaders = append(blockHeaders, blockHeaderIn)
+
+			logger.Printf("Header %x with height %v broadcasted\n",
+				blockHeaderIn.Hash[:8],
+				blockHeaderIn.Height)
 		} else {
 			//The client is out of sync. Header cannot be appended to the array. The client must sync first.
 			//Set the uptodate flag to false in order to avoid listening to new incoming block headers.
