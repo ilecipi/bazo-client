@@ -9,6 +9,7 @@ import (
 	"net"
 	"strconv"
 	"strings"
+	"time"
 )
 
 var (
@@ -42,6 +43,9 @@ func initiateNewClientConnection(dial string) (*peer, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	//Connection does not time out if idle.
+	conn.SetDeadline(time.Time{})
 
 	p := newPeer(conn, strings.Split(dial, ":")[1])
 
