@@ -44,8 +44,8 @@ func initiateNewClientConnection(dial string) (*peer, error) {
 		return nil, err
 	}
 
-	//Connection does not time out if idle.
-	conn.SetDeadline(time.Time{})
+	conn.(*net.TCPConn).SetKeepAlive(true)
+	conn.(*net.TCPConn).SetKeepAlivePeriod(1 * time.Minute)
 
 	p := newPeer(conn, strings.Split(dial, ":")[1])
 
