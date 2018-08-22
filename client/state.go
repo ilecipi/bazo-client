@@ -33,19 +33,39 @@ func updateBlockHeaders() {
 	time.Sleep(10 * time.Second)
 
 	var loaded []*protocol.Block
-	var youngest *protocol.Block
+	var last *protocol.Block
 
-	youngest = loadBlockHeader(nil)
-	if youngest == nil {
+	//youngest = loadBlockHeader(nil)
+	last = cstorage.ReadLastBlockHeader()
+	if last == nil {
 		logger.Fatal()
 	} else {
-		loaded = checkForNewBlockHeaders(youngest, [32]byte{}, loaded)
+		loaded = loadBlockHeaders(last, loaded)
 	}
 
 	blockHeaders = append(blockHeaders, loaded...)
 
 	//The client is up to date with the network and can start listening for incoming headers.
 	network.Uptodate = true
+}
+
+func loadBlockHeaders(last *protocol.Block, loaded []*protocol.Block) []*protocol.Block {
+	var ancestor *protocol.Block
+	if ancestor = cstorage.ReadBlockHeader(last.PrevHash); ancestor == nil {
+		logger.Fatal()
+	}
+
+	if ancestor.Hash != [32]byte{} {
+		loaded = loadBlockHeaders(ancestor, loaded)
+
+		logger.Printf("Header %x with height %v loaded from DB\n",
+			ancestor.Hash[:8],
+			ancestor.Height)
+
+		loaded = append(loaded, last)
+	}
+
+	return loaded
 }
 
 //Load all blockheaders from latest to the lastloaded (hash) given recursively.
@@ -115,14 +135,24 @@ func incomingBlockHeaders() {
 		if blockHeaderIn.PrevHash == blockHeaders[len(blockHeaders)-1].Hash {
 			blockHeaders = append(blockHeaders, blockHeaderIn)
 
-			logger.Printf("Header %x with height %v broadcasted\n",
+			logger.Printf("Header %x with height %v loaded from network\n",
 				blockHeaderIn.Hash[:8],
 				blockHeaderIn.Height)
 		} else {
 			//The client is out of sync. Header cannot be appended to the array. The client must sync first.
 			//Set the uptodate flag to false in order to avoid listening to new incoming block headers.
 			network.Uptodate = false
-			blockHeaders = checkForNewBlockHeaders(blockHeaderIn, blockHeaders[len(blockHeaders)-1].Hash, blockHeaders)
+			current := blockHeaderIn
+
+			for current.PrevHash != blockHeaders[len(blockHeaders)-1].Hash {
+				current = loadBlockHeader(current.PrevHash[:])
+				cstorage.WriteBlockHeader(current)
+
+				logger.Printf("Header %x with height %v loaded from network\n",
+					current.Hash[:8],
+					current.Height)
+			}
+
 			network.Uptodate = true
 		}
 	}
