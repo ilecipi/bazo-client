@@ -1,8 +1,8 @@
 package client
 
 import (
-		"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-client/network"
+	"github.com/bazo-blockchain/bazo-miner/protocol"
 )
 
 func getRelevantBlocks(relevantBlockHeaders []*protocol.Block) (relevantBlocks []*protocol.Block, err error) {
