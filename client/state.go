@@ -28,40 +28,58 @@ func sync() {
 }
 
 func loadBlockHeaders() {
-	var loaded []*protocol.Block
 	var last *protocol.Block
 
 	//youngest = fetchBlockHeader(nil)
-	last = cstorage.ReadLastBlockHeader()
-	if last == nil {
-		logger.Fatal()
-	} else {
+	if last = cstorage.ReadLastBlockHeader(); last != nil {
+		var loaded []*protocol.Block
 		loaded = loadDB(last, [32]byte{}, loaded)
+		blockHeaders = append(blockHeaders, loaded...)
 	}
-
-	blockHeaders = append(blockHeaders, loaded...)
 
 	//The client is up to date with the network and can start listening for incoming headers.
 	network.Uptodate = true
 }
 
-func loadDB(last *protocol.Block, abort [32]byte, loaded []*protocol.Block) []*protocol.Block {
-	var ancestor *protocol.Block
-	if ancestor = cstorage.ReadBlockHeader(last.PrevHash); ancestor == nil {
-		logger.Fatal()
+func incomingBlockHeaders() {
+	for {
+		blockHeaderIn := <-network.BlockHeaderIn
+
+		var last *protocol.Block
+		var lastHash [32]byte
+
+		if len(blockHeaders) > 0 {
+			last = blockHeaders[len(blockHeaders)-1]
+			lastHash = last.Hash
+		} else {
+			lastHash = [32]byte{}
+		}
+
+		if last == nil || blockHeaderIn.PrevHash != lastHash {
+			//The client is out of sync. Header cannot be appended to the array. The client must sync first.
+			//Set the uptodate flag to false in order to avoid listening to new incoming block headers.
+			network.Uptodate = false
+			var loaded []*protocol.Block
+
+			loaded = loadNetwork(blockHeaderIn, lastHash, loaded)
+			blockHeaders = append(blockHeaders, loaded...)
+			cstorage.WriteLastBlockHeader(blockHeaders[len(blockHeaders)-1])
+
+			network.Uptodate = true
+		} else {
+			//The incoming block header is already the last saved in the array.
+			if blockHeaderIn.Hash == lastHash {
+				break
+			}
+
+			if blockHeaderIn.PrevHash == lastHash {
+				saveAndLogBlockHeader(blockHeaderIn)
+
+				blockHeaders = append(blockHeaders, blockHeaderIn)
+				cstorage.WriteLastBlockHeader(blockHeaderIn)
+			}
+		}
 	}
-
-	if last.PrevHash != abort {
-		loaded = loadDB(ancestor, abort, loaded)
-	}
-
-	logger.Printf("Header %x with height %v loaded from DB\n",
-		last.Hash[:8],
-		last.Height)
-
-	loaded = append(loaded, last)
-
-	return loaded
 }
 
 func fetchBlockHeader(blockHash []byte) (blockHeader *protocol.Block) {
@@ -87,40 +105,24 @@ func fetchBlockHeader(blockHash []byte) (blockHeader *protocol.Block) {
 	return blockHeader
 }
 
-func incomingBlockHeaders() {
-	for {
-		blockHeaderIn := <-network.BlockHeaderIn
+func loadDB(last *protocol.Block, abort [32]byte, loaded []*protocol.Block) []*protocol.Block {
+	var ancestor *protocol.Block
 
-		//The incoming block header is already the last saved in the array.
-		if blockHeaderIn.Hash == blockHeaders[len(blockHeaders)-1].Hash {
-			break
+	if last.PrevHash != abort {
+		if ancestor = cstorage.ReadBlockHeader(last.PrevHash); ancestor == nil {
+			logger.Fatal()
 		}
 
-		if blockHeaderIn.PrevHash == blockHeaders[len(blockHeaders)-1].Hash {
-			saveAndLogBlockHeader(blockHeaderIn)
-
-			blockHeaders = append(blockHeaders, blockHeaderIn)
-			cstorage.WriteLastBlockHeader(blockHeaderIn)
-		} else {
-			//The client is out of sync. Header cannot be appended to the array. The client must sync first.
-			//Set the uptodate flag to false in order to avoid listening to new incoming block headers.
-			network.Uptodate = false
-			var loaded []*protocol.Block
-
-			loaded = loadNetwork(blockHeaderIn, blockHeaders[len(blockHeaders)-1].Hash, loaded)
-			blockHeaders = append(blockHeaders, loaded...)
-			cstorage.WriteLastBlockHeader(blockHeaders[len(blockHeaders)-1])
-
-			network.Uptodate = true
-		}
+		loaded = loadDB(ancestor, abort, loaded)
 	}
-}
 
-func saveAndLogBlockHeader(blockHeader *protocol.Block) {
-	cstorage.WriteBlockHeader(blockHeader)
-	logger.Printf("Header %x with height %v loaded from network\n",
-		blockHeader.Hash[:8],
-		blockHeader.Height)
+	logger.Printf("Header %x with height %v loaded from DB\n",
+		last.Hash[:8],
+		last.Height)
+
+	loaded = append(loaded, last)
+
+	return loaded
 }
 
 func loadNetwork(last *protocol.Block, abort [32]byte, loaded []*protocol.Block) []*protocol.Block {
@@ -138,6 +140,13 @@ func loadNetwork(last *protocol.Block, abort [32]byte, loaded []*protocol.Block)
 	loaded = append(loaded, last)
 
 	return loaded
+}
+
+func saveAndLogBlockHeader(blockHeader *protocol.Block) {
+	cstorage.WriteBlockHeader(blockHeader)
+	logger.Printf("Header %x with height %v loaded from network\n",
+		blockHeader.Hash[:8],
+		blockHeader.Height)
 }
 
 func getState(acc *Account, lastTenTx []*FundsTxJson) (err error) {
