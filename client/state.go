@@ -2,12 +2,11 @@ package client
 
 import (
 	"fmt"
+	"github.com/bazo-blockchain/bazo-client/cstorage"
 	"github.com/bazo-blockchain/bazo-client/network"
 	"github.com/bazo-blockchain/bazo-miner/miner"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"time"
-	"github.com/bazo-blockchain/bazo-client/cstorage"
 )
 
 var (
@@ -23,24 +22,21 @@ var (
 
 //Update allBlockHeaders to the latest header. Start listening to broadcasted headers after.
 func sync() {
-	updateBlockHeaders()
+	loadBlockHeaders()
 
 	go incomingBlockHeaders()
 }
 
-func updateBlockHeaders() {
-	//Wait until a connection is to the network is established.
-	time.Sleep(10 * time.Second)
-
+func loadBlockHeaders() {
 	var loaded []*protocol.Block
 	var last *protocol.Block
 
-	//youngest = loadBlockHeader(nil)
+	//youngest = fetchBlockHeader(nil)
 	last = cstorage.ReadLastBlockHeader()
 	if last == nil {
 		logger.Fatal()
 	} else {
-		loaded = loadBlockHeaders(last, loaded)
+		loaded = loadDB(last, [32]byte{}, loaded)
 	}
 
 	blockHeaders = append(blockHeaders, loaded...)
@@ -49,55 +45,26 @@ func updateBlockHeaders() {
 	network.Uptodate = true
 }
 
-func loadBlockHeaders(last *protocol.Block, loaded []*protocol.Block) []*protocol.Block {
+func loadDB(last *protocol.Block, abort [32]byte, loaded []*protocol.Block) []*protocol.Block {
 	var ancestor *protocol.Block
 	if ancestor = cstorage.ReadBlockHeader(last.PrevHash); ancestor == nil {
 		logger.Fatal()
 	}
 
-	if ancestor.Hash != [32]byte{} {
-		loaded = loadBlockHeaders(ancestor, loaded)
-
-		logger.Printf("Header %x with height %v loaded from DB\n",
-			ancestor.Hash[:8],
-			ancestor.Height)
-
-		loaded = append(loaded, last)
+	if last.PrevHash != abort {
+		loaded = loadDB(ancestor, abort, loaded)
 	}
+
+	logger.Printf("Header %x with height %v loaded from DB\n",
+		last.Hash[:8],
+		last.Height)
+
+	loaded = append(loaded, last)
 
 	return loaded
 }
 
-//Load all blockheaders from latest to the lastloaded (hash) given recursively.
-func checkForNewBlockHeaders(latest *protocol.Block, lastLoaded [32]byte, loaded []*protocol.Block) []*protocol.Block {
-	if latest.Hash != lastLoaded {
-		var ancestor *protocol.Block
-		writeToDB := false
-
-		if ancestor = cstorage.ReadBlockHeader(latest.PrevHash); ancestor == nil {
-			ancestor = loadBlockHeader(latest.PrevHash[:])
-			writeToDB = true
-		}
-
-		if ancestor == nil {
-			//Try again
-			ancestor = latest
-		} else {
-			if writeToDB {cstorage.WriteBlockHeader(ancestor)}
-
-			logger.Printf("Header %x with height %v loaded\n",
-				ancestor.Hash[:8],
-				ancestor.Height)
-		}
-
-		loaded = checkForNewBlockHeaders(ancestor, lastLoaded, loaded)
-		loaded = append(loaded, latest)
-	}
-
-	return loaded
-}
-
-func loadBlockHeader(blockHash []byte) (blockHeader *protocol.Block) {
+func fetchBlockHeader(blockHash []byte) (blockHeader *protocol.Block) {
 	var errormsg string
 	if blockHash != nil {
 		errormsg = fmt.Sprintf("Loading block header %x failed: ", blockHash[:8])
@@ -124,38 +91,53 @@ func incomingBlockHeaders() {
 	for {
 		blockHeaderIn := <-network.BlockHeaderIn
 
-		cstorage.WriteBlockHeader(blockHeaderIn)
-		cstorage.WriteLastBlockHeader(blockHeaderIn)
-
 		//The incoming block header is already the last saved in the array.
 		if blockHeaderIn.Hash == blockHeaders[len(blockHeaders)-1].Hash {
 			break
 		}
 
 		if blockHeaderIn.PrevHash == blockHeaders[len(blockHeaders)-1].Hash {
-			blockHeaders = append(blockHeaders, blockHeaderIn)
+			saveAndLogBlockHeader(blockHeaderIn)
 
-			logger.Printf("Header %x with height %v loaded from network\n",
-				blockHeaderIn.Hash[:8],
-				blockHeaderIn.Height)
+			blockHeaders = append(blockHeaders, blockHeaderIn)
+			cstorage.WriteLastBlockHeader(blockHeaderIn)
 		} else {
 			//The client is out of sync. Header cannot be appended to the array. The client must sync first.
 			//Set the uptodate flag to false in order to avoid listening to new incoming block headers.
 			network.Uptodate = false
-			current := blockHeaderIn
+			var loaded []*protocol.Block
 
-			for current.PrevHash != blockHeaders[len(blockHeaders)-1].Hash {
-				current = loadBlockHeader(current.PrevHash[:])
-				cstorage.WriteBlockHeader(current)
-
-				logger.Printf("Header %x with height %v loaded from network\n",
-					current.Hash[:8],
-					current.Height)
-			}
+			loaded = loadNetwork(blockHeaderIn, blockHeaders[len(blockHeaders)-1].Hash, loaded)
+			blockHeaders = append(blockHeaders, loaded...)
+			cstorage.WriteLastBlockHeader(blockHeaders[len(blockHeaders)-1])
 
 			network.Uptodate = true
 		}
 	}
+}
+
+func saveAndLogBlockHeader(blockHeader *protocol.Block) {
+	cstorage.WriteBlockHeader(blockHeader)
+	logger.Printf("Header %x with height %v loaded from network\n",
+		blockHeader.Hash[:8],
+		blockHeader.Height)
+}
+
+func loadNetwork(last *protocol.Block, abort [32]byte, loaded []*protocol.Block) []*protocol.Block {
+	var ancestor *protocol.Block
+	if ancestor = fetchBlockHeader(last.PrevHash[:]); ancestor == nil {
+		logger.Fatal()
+	}
+
+	if last.PrevHash != abort {
+		loaded = loadNetwork(ancestor, abort, loaded)
+	}
+
+	saveAndLogBlockHeader(last)
+
+	loaded = append(loaded, last)
+
+	return loaded
 }
 
 func getState(acc *Account, lastTenTx []*FundsTxJson) (err error) {

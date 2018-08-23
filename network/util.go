@@ -5,9 +5,9 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
+	"github.com/bazo-blockchain/bazo-client/util"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"time"
-	"github.com/bazo-blockchain/bazo-client/util"
 )
 
 func Fetch(channelToFetchFrom chan interface{}) (payload interface{}, err error) {

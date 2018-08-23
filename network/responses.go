@@ -1,10 +1,10 @@
 package network
 
 import (
+	"encoding/binary"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"strconv"
-	"encoding/binary"
 )
 
 func blockHeaderBrdcst(p *peer, payload []byte) {

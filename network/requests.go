@@ -2,10 +2,10 @@ package network
 
 import (
 	"errors"
+	"fmt"
+	"github.com/bazo-blockchain/bazo-client/util"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"github.com/bazo-blockchain/bazo-client/util"
-	"fmt"
 )
 
 func BlockReq(blockHash []byte) error {

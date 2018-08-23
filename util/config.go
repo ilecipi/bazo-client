@@ -1,9 +1,9 @@
 package util
 
 import (
-	"os"
-	"fmt"
 	"encoding/json"
+	"fmt"
+	"os"
 )
 
 const (

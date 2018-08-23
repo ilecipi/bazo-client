@@ -1,8 +1,8 @@
 package network
 
 import (
-	"time"
 	"github.com/bazo-blockchain/bazo-client/util"
+	"time"
 )
 
 //Single goroutine that makes sure the system is well connected.

@@ -1,13 +1,13 @@
 package client
 
 import (
+	"github.com/bazo-blockchain/bazo-client/network"
 	"github.com/bazo-blockchain/bazo-client/util"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"log"
 	"os"
-	"github.com/bazo-blockchain/bazo-client/network"
 )
 
 var (
@@ -61,7 +61,7 @@ func ProcessState(fileName string) {
 		return
 	}
 
-	updateBlockHeaders()
+	loadBlockHeaders()
 
 	address := storage.GetAddressFromPubKey(&pubKey)
 
