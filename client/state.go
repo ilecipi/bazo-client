@@ -102,7 +102,7 @@ func fetchBlockHeader(blockHash []byte) (blockHeader *protocol.Block) {
 
 	blockHeader = blockHeaderI.(*protocol.Block)
 
-	fmt.Printf("Header with height %v loaded", blockHeader.Height)
+	logger.Printf("Fetch header with height %v\n", blockHeader.Height)
 
 	return blockHeader
 }
