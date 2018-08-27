@@ -48,7 +48,7 @@ func rcvData(p *peer) (header *p2p.Header, payload []byte, err error) {
 		}
 	}
 
-	logger.Printf("Receive message:\nSender: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), p2p.LogMapping[header.TypeID], len(payload))
+	// logger.Printf("Receive message:\nSender: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), p2p.LogMapping[header.TypeID], len(payload))
 
 	return header, payload, nil
 }
@@ -84,7 +84,7 @@ func extractHeader(headerData []byte) *p2p.Header {
 }
 
 func sendData(p *peer, payload []byte) {
-	logger.Printf("Send message:\nReceiver: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), p2p.LogMapping[payload[4]], len(payload)-p2p.HEADER_LEN)
+	// logger.Printf("Send message:\nReceiver: %v\nType: %v\nPayload length: %v\n", p.getIPPort(), p2p.LogMapping[payload[4]], len(payload)-p2p.HEADER_LEN)
 
 	p.l.Lock()
 	p.conn.Write(payload)
