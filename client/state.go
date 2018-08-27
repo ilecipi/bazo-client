@@ -85,7 +85,7 @@ func incomingBlockHeaders() {
 func fetchBlockHeader(blockHash []byte) (blockHeader *protocol.Block) {
 	var errormsg string
 	if blockHash != nil {
-		errormsg = fmt.Sprintf("Loading block header %x failed: ", blockHash[:8])
+		errormsg = fmt.Sprintf("Loading header %x failed: ", blockHash[:8])
 	}
 
 	err := network.BlockHeaderReq(blockHash[:])
@@ -101,6 +101,8 @@ func fetchBlockHeader(blockHash []byte) (blockHeader *protocol.Block) {
 	}
 
 	blockHeader = blockHeaderI.(*protocol.Block)
+
+	fmt.Printf("Header with height %v loaded", blockHeader.Height)
 
 	return blockHeader
 }
