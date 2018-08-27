@@ -128,7 +128,10 @@ func loadDB(last *protocol.Block, abort [32]byte, loaded []*protocol.Block) []*p
 func loadNetwork(last *protocol.Block, abort [32]byte, loaded []*protocol.Block) []*protocol.Block {
 	var ancestor *protocol.Block
 	if ancestor = fetchBlockHeader(last.PrevHash[:]); ancestor == nil {
-		logger.Fatal()
+		for ancestor == nil {
+			logger.Printf("Try to fetch header %x with height %v again\n", last.Hash[:8], last.Height)
+			ancestor = fetchBlockHeader(last.PrevHash[:])
+		}
 	}
 
 	if last.PrevHash != abort {
