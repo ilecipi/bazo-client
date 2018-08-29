@@ -48,6 +48,7 @@ func incomingBlockHeaders() {
 		var last *protocol.Block
 		var lastHash [32]byte
 
+		//Get the last header in the blockHeaders array. Its hash is relevant for appending the incoming header or the abort condition for recursive header fetching.
 		if len(blockHeaders) > 0 {
 			last = blockHeaders[len(blockHeaders)-1]
 			lastHash = last.Hash
@@ -55,23 +56,27 @@ func incomingBlockHeaders() {
 			lastHash = [32]byte{}
 		}
 
+		//The incoming block header is already the last saved in the array.
+		if blockHeaderIn.Hash == lastHash {
+			continue
+		}
+
+		//The client is out of sync. Header cannot be appended to the array. The client must sync first.
 		if last == nil || blockHeaderIn.PrevHash != lastHash {
-			//The client is out of sync. Header cannot be appended to the array. The client must sync first.
 			//Set the uptodate flag to false in order to avoid listening to new incoming block headers.
 			network.Uptodate = false
+
+			//Remove the last 100 headers. This is precaution if the array contains rolled back blocks.
+			blockHeaders = blockHeaders[:len(blockHeaders)-100]
+
 			var loaded []*protocol.Block
 
-			loaded = loadNetwork(blockHeaderIn, lastHash, loaded)
+			loaded = loadNetwork(blockHeaderIn, blockHeaders[len(blockHeaders)-1].Hash, loaded)
 			blockHeaders = append(blockHeaders, loaded...)
 			cstorage.WriteLastBlockHeader(blockHeaders[len(blockHeaders)-1])
 
 			network.Uptodate = true
 		} else {
-			//The incoming block header is already the last saved in the array.
-			if blockHeaderIn.Hash == lastHash {
-				break
-			}
-
 			if blockHeaderIn.PrevHash == lastHash {
 				saveAndLogBlockHeader(blockHeaderIn)
 
