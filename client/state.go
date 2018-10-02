@@ -66,23 +66,26 @@ func incomingBlockHeaders() {
 			//Set the uptodate flag to false in order to avoid listening to new incoming block headers.
 			network.Uptodate = false
 
-			//Remove the last 100 headers. This is precaution if the array contains rolled back blocks.
-			blockHeaders = blockHeaders[:len(blockHeaders)-100]
-
 			var loaded []*protocol.Block
 
-			loaded = loadNetwork(blockHeaderIn, blockHeaders[len(blockHeaders)-1].Hash, loaded)
+			if last == nil || len(blockHeaders) <= 100 {
+				blockHeaders = []*protocol.Block{}
+				loaded = loadNetwork(blockHeaderIn, [32]byte{}, loaded)
+			} else {
+				//Remove the last 100 headers. This is precaution if the array contains rolled back blocks.
+				blockHeaders = blockHeaders[:len(blockHeaders)-100]
+				loaded = loadNetwork(blockHeaderIn, blockHeaders[len(blockHeaders)-1].Hash, loaded)
+			}
+
 			blockHeaders = append(blockHeaders, loaded...)
 			cstorage.WriteLastBlockHeader(blockHeaders[len(blockHeaders)-1])
 
 			network.Uptodate = true
-		} else {
-			if blockHeaderIn.PrevHash == lastHash {
-				saveAndLogBlockHeader(blockHeaderIn)
+		} else if blockHeaderIn.PrevHash == lastHash {
+			saveAndLogBlockHeader(blockHeaderIn)
 
-				blockHeaders = append(blockHeaders, blockHeaderIn)
-				cstorage.WriteLastBlockHeader(blockHeaderIn)
-			}
+			blockHeaders = append(blockHeaders, blockHeaderIn)
+			cstorage.WriteLastBlockHeader(blockHeaderIn)
 		}
 	}
 }
