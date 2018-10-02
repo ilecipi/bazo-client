@@ -24,7 +24,8 @@ func Init() {
 	peers.minerConns = make(map[*peer]bool)
 
 	go peerService()
-	go checkHealthService()
+	// TODO Enable again
+	//go checkHealthService()
 
 	p, err := initiateNewClientConnection(util.Config.BootstrapIpport)
 	if err != nil {
