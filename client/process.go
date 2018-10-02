@@ -48,7 +48,7 @@ func parseAccTx(args []string) (tx protocol.Transaction, err error) {
 		newPubInt, _ := new(big.Int).SetString(args[3], 16)
 		copy(newAddress[:], newPubInt.Bytes())
 
-		tx, _, err = protocol.ConstrAccTx(byte(header), uint64(fee), newAddress, &privKey)
+		tx, _, err = protocol.ConstrAccTx(byte(header), uint64(fee), newAddress, &privKey, nil, nil)
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
 		}
@@ -60,7 +60,7 @@ func parseAccTx(args []string) (tx protocol.Transaction, err error) {
 			return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
 		}
 
-		tx, newKey, err = protocol.ConstrAccTx(byte(header), uint64(fee), [64]byte{}, &privKey)
+		tx, newKey, err = protocol.ConstrAccTx(byte(header), uint64(fee), [64]byte{}, &privKey, nil, nil)
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
 		}
@@ -74,6 +74,7 @@ func parseAccTx(args []string) (tx protocol.Transaction, err error) {
 		}
 	}
 
+	fmt.Printf("chash: %x\n", tx.Hash())
 	return tx, nil
 }
 
@@ -177,7 +178,7 @@ func parseFundsTx(args []string) (tx protocol.Transaction, err error) {
 	fromAddress := storage.GetAddressFromPubKey(&fromPubKey)
 	toAddress := storage.GetAddressFromPubKey(&toPubKey)
 
-	tx, err = protocol.ConstrFundsTx(byte(header), uint64(amount), uint64(fee), uint32(txCnt), protocol.SerializeHashContent(fromAddress), protocol.SerializeHashContent(toAddress), &fromPrivKey, &multiSigPrivKey)
+	tx, err = protocol.ConstrFundsTx(byte(header), uint64(amount), uint64(fee), uint32(txCnt), protocol.SerializeHashContent(fromAddress), protocol.SerializeHashContent(toAddress), &fromPrivKey, &multiSigPrivKey, nil)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
