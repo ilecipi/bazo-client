@@ -55,7 +55,7 @@ func ProcessTx(args []string) {
 }
 
 func ProcessState(fileName string) {
-	pubKey, _, err := storage.ExtractKeyFromFile(fileName)
+	pubKey, _, err := storage.ExtractECDSAKeyFromFile(fileName)
 	if err != nil {
 		logger.Printf("%v\n%v", err, USAGE_MSG)
 		return

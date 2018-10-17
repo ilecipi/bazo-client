@@ -34,7 +34,7 @@ func parseAccTx(args []string) (tx protocol.Transaction, err error) {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
 	}
 
-	_, privKey, err := storage.ExtractKeyFromFile(args[2])
+	_, privKey, err := storage.ExtractECDSAKeyFromFile(args[2])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
 	}
@@ -112,7 +112,7 @@ func parseConfigTx(args []string) (tx protocol.Transaction, err error) {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, configTxUsage))
 	}
 
-	_, privKey, err := storage.ExtractKeyFromFile(args[5])
+	_, privKey, err := storage.ExtractECDSAKeyFromFile(args[5])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, configTxUsage))
 	}
@@ -152,12 +152,12 @@ func parseFundsTx(args []string) (tx protocol.Transaction, err error) {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
 
-	fromPubKey, fromPrivKey, err := storage.ExtractKeyFromFile(args[4])
+	fromPubKey, fromPrivKey, err := storage.ExtractECDSAKeyFromFile(args[4])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
 
-	toPubKey, _, err := storage.ExtractKeyFromFile(args[5])
+	toPubKey, _, err := storage.ExtractECDSAKeyFromFile(args[5])
 	if err != nil {
 		if len(args[5]) == 128 {
 			runes := []rune(args[5])
@@ -170,7 +170,7 @@ func parseFundsTx(args []string) (tx protocol.Transaction, err error) {
 		}
 	}
 
-	_, multiSigPrivKey, err := storage.ExtractKeyFromFile(args[6])
+	_, multiSigPrivKey, err := storage.ExtractECDSAKeyFromFile(args[6])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
@@ -245,7 +245,10 @@ func parseStakeTx(args []string) (tx protocol.Transaction, err error) {
 	copy(accountPubKey[0:32], pub1Int.Bytes())
 	copy(accountPubKey[32:64], pub2Int.Bytes())
 
-	_, privKey, err := storage.ExtractKeyFromFile(args[4])
+	_, privKey, err := storage.ExtractECDSAKeyFromFile(args[4])
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("%v%v", err, stakeTxUsage))
+	}
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, stakeTxUsage))
 	}
