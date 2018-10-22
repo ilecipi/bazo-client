@@ -20,4 +20,5 @@
 .glide/
 
 tmp/
+client.db
 bazo-client
