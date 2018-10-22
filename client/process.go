@@ -187,7 +187,7 @@ func parseFundsTx(args []string) (tx protocol.Transaction, err error) {
 }
 
 func parseStakeTx(args []string) (tx protocol.Transaction, err error) {
-	stakeTxUsage := "\nUsage: bazo_client stakeTx <header> <fee> <isStaking> <account> <privKey> <commKey>"
+	stakeTxUsage := "\nUsage: bazo_client stakeTx <header> <fee> <isStaking> <account> <privKey> <commPrivKey>"
 
 	var (
 		accountPubKey [64]byte
@@ -250,7 +250,7 @@ func parseStakeTx(args []string) (tx protocol.Transaction, err error) {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, stakeTxUsage))
 	}
 
-	commKey, err := storage.ExtractRSAKeyFromFile(args[5])
+	commPrivKey, err := storage.ExtractRSAKeyFromFile(args[5])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, stakeTxUsage))
 	}
@@ -269,7 +269,7 @@ func parseStakeTx(args []string) (tx protocol.Transaction, err error) {
 		hashedSeed,
 		protocol.SerializeHashContent(accountPubKey[:]),
 		&privKey,
-		commKey.PublicKey,
+		&commPrivKey.PublicKey,
 	)
 
 	if err != nil {
