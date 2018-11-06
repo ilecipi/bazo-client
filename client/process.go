@@ -157,8 +157,7 @@ func parseFundsTx(args []string) (tx protocol.Transaction, err error) {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
 
-	toPrivKey, err := crypto.ExtractECDSAKeyFromFile(args[5])
-	toPubKey := &toPrivKey.PublicKey
+	toPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args[5])
 	if err != nil {
 		if len(args[5]) == 128 {
 			runes := []rune(args[5])
