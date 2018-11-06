@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/bazo-blockchain/bazo-miner/storage"
 	"math/big"
@@ -34,7 +35,7 @@ func parseAccTx(args []string) (tx protocol.Transaction, err error) {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
 	}
 
-	_, privKey, err := storage.ExtractECDSAKeyFromFile(args[2])
+	privKey, err := crypto.ExtractECDSAKeyFromFile(args[2])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
 	}
@@ -48,7 +49,7 @@ func parseAccTx(args []string) (tx protocol.Transaction, err error) {
 		newPubInt, _ := new(big.Int).SetString(args[3], 16)
 		copy(newAddress[:], newPubInt.Bytes())
 
-		tx, _, err = protocol.ConstrAccTx(byte(header), uint64(fee), newAddress, &privKey, nil, nil)
+		tx, _, err = protocol.ConstrAccTx(byte(header), uint64(fee), newAddress, privKey, nil, nil)
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
 		}
@@ -112,12 +113,12 @@ func parseConfigTx(args []string) (tx protocol.Transaction, err error) {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, configTxUsage))
 	}
 
-	_, privKey, err := storage.ExtractECDSAKeyFromFile(args[5])
+	privKey, err := crypto.ExtractECDSAKeyFromFile(args[5])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, configTxUsage))
 	}
 
-	tx, err = protocol.ConstrConfigTx(byte(header), uint8(id), uint64(payload), uint64(fee), uint8(txCnt), &privKey)
+	tx, err = protocol.ConstrConfigTx(byte(header), uint8(id), uint64(payload), uint64(fee), uint8(txCnt), privKey)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, configTxUsage))
 	}
@@ -152,33 +153,34 @@ func parseFundsTx(args []string) (tx protocol.Transaction, err error) {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
 
-	fromPubKey, fromPrivKey, err := storage.ExtractECDSAKeyFromFile(args[4])
+	fromPrivKey, err := crypto.ExtractECDSAKeyFromFile(args[4])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
 
-	toPubKey, _, err := storage.ExtractECDSAKeyFromFile(args[5])
+	toPrivKey, err := crypto.ExtractECDSAKeyFromFile(args[5])
+	toPubKey := &toPrivKey.PublicKey
 	if err != nil {
 		if len(args[5]) == 128 {
 			runes := []rune(args[5])
 			pub1 := string(runes[:64])
 			pub2 := string(runes[64:])
 
-			toPubKey, _ = storage.GetPubKeyFromString(pub1, pub2)
+			toPubKey, _ = crypto.GetPubKeyFromString(pub1, pub2)
 		} else {
 			return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 		}
 	}
 
-	_, multiSigPrivKey, err := storage.ExtractECDSAKeyFromFile(args[6])
+	multiSigPrivKey, err := crypto.ExtractECDSAKeyFromFile(args[6])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
 
-	fromAddress := storage.GetAddressFromPubKey(&fromPubKey)
-	toAddress := storage.GetAddressFromPubKey(&toPubKey)
+	fromAddress := crypto.GetAddressFromPubKey(&fromPrivKey.PublicKey)
+	toAddress := crypto.GetAddressFromPubKey(toPubKey)
 
-	tx, err = protocol.ConstrFundsTx(byte(header), uint64(amount), uint64(fee), uint32(txCnt), protocol.SerializeHashContent(fromAddress), protocol.SerializeHashContent(toAddress), &fromPrivKey, &multiSigPrivKey, nil)
+	tx, err = protocol.ConstrFundsTx(byte(header), uint64(amount), uint64(fee), uint32(txCnt), protocol.SerializeHashContent(fromAddress), protocol.SerializeHashContent(toAddress), fromPrivKey, multiSigPrivKey, nil)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
@@ -229,12 +231,12 @@ func parseStakeTx(args []string) (tx protocol.Transaction, err error) {
 	copy(accountPubKey[0:32], pub1Int.Bytes())
 	copy(accountPubKey[32:64], pub2Int.Bytes())
 
-	_, privKey, err := storage.ExtractECDSAKeyFromFile(args[4])
+	privKey, err := crypto.ExtractECDSAKeyFromFile(args[4])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, stakeTxUsage))
 	}
 
-	commPrivKey, err := storage.ExtractRSAKeyFromFile(args[5])
+	commPrivKey, err := crypto.ExtractRSAKeyFromFile(args[5])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, stakeTxUsage))
 	}
@@ -251,8 +253,8 @@ func parseStakeTx(args []string) (tx protocol.Transaction, err error) {
 		uint64(fee),
 		isStakingAsBool,
 		protocol.SerializeHashContent(accountPubKey[:]),
-		&privKey,
-		&commPrivKey,
+		privKey,
+		&commPrivKey.PublicKey,
 	)
 
 	if err != nil {

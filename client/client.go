@@ -3,9 +3,9 @@ package client
 import (
 	"github.com/bazo-blockchain/bazo-client/network"
 	"github.com/bazo-blockchain/bazo-client/util"
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 	"log"
 	"os"
 )
@@ -54,8 +54,8 @@ func ProcessTx(args []string) {
 	}
 }
 
-func ProcessState(fileName string) {
-	pubKey, _, err := storage.ExtractECDSAKeyFromFile(fileName)
+func ProcessState(filename string) {
+	privKey, err := crypto.ExtractECDSAKeyFromFile(filename)
 	if err != nil {
 		logger.Printf("%v\n%v", err, USAGE_MSG)
 		return
@@ -63,7 +63,7 @@ func ProcessState(fileName string) {
 
 	loadBlockHeaders()
 
-	address := storage.GetAddressFromPubKey(&pubKey)
+	address := crypto.GetAddressFromPubKey(&privKey.PublicKey)
 
 	logger.Printf("My address: %x\n", address)
 
