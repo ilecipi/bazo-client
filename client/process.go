@@ -1,7 +1,6 @@
 package client
 
 import (
-	"bufio"
 	"crypto/ecdsa"
 	"errors"
 	"fmt"
@@ -10,7 +9,6 @@ import (
 	"math/big"
 	"os"
 	"strconv"
-	"strings"
 )
 
 const (
@@ -178,7 +176,17 @@ func parseFundsTx(args []string) (tx protocol.Transaction, err error) {
 	fromAddress := crypto.GetAddressFromPubKey(&fromPrivKey.PublicKey)
 	toAddress := crypto.GetAddressFromPubKey(toPubKey)
 
-	tx, err = protocol.ConstrFundsTx(byte(header), uint64(amount), uint64(fee), uint32(txCnt), protocol.SerializeHashContent(fromAddress), protocol.SerializeHashContent(toAddress), fromPrivKey, multiSigPrivKey, nil)
+	tx, err = protocol.ConstrFundsTx(
+		byte(header),
+		uint64(amount),
+		uint64(fee),
+		uint32(txCnt),
+		protocol.SerializeHashContent(fromAddress),
+		protocol.SerializeHashContent(toAddress),
+		fromPrivKey,
+		multiSigPrivKey,
+		nil)
+
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
@@ -188,8 +196,6 @@ func parseFundsTx(args []string) (tx protocol.Transaction, err error) {
 
 func parseStakeTx(args []string) (tx protocol.Transaction, err error) {
 	stakeTxUsage := "\nUsage: bazo_client stakeTx <header> <fee> <isStaking> <account> <privKey> <commitmentFile>"
-
-	var accountPubKey [64]byte
 
 	if len(args) != 6 {
 		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, stakeTxUsage))
@@ -210,24 +216,11 @@ func parseStakeTx(args []string) (tx protocol.Transaction, err error) {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, stakeTxUsage))
 	}
 
-	hashFromFile, err := os.Open(args[3])
+	pubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args[3])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, stakeTxUsage))
 	}
-
-	reader := bufio.NewReader(hashFromFile)
-
-	//We only need the public key
-	pub1, err := reader.ReadString('\n')
-	pub2, err2 := reader.ReadString('\n')
-	if err != nil || err2 != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", err, stakeTxUsage))
-	}
-
-	pub1Int, _ := new(big.Int).SetString(strings.Split(pub1, "\n")[0], 16)
-	pub2Int, _ := new(big.Int).SetString(strings.Split(pub2, "\n")[0], 16)
-	copy(accountPubKey[0:32], pub1Int.Bytes())
-	copy(accountPubKey[32:64], pub2Int.Bytes())
+	accountPubKey := crypto.GetAddressFromPubKey(pubKey)
 
 	privKey, err := crypto.ExtractECDSAKeyFromFile(args[4])
 	if err != nil {
@@ -250,7 +243,7 @@ func parseStakeTx(args []string) (tx protocol.Transaction, err error) {
 		byte(header),
 		uint64(fee),
 		isStakingAsBool,
-		protocol.SerializeHashContent(accountPubKey[:]),
+		protocol.SerializeHashContent(accountPubKey),
 		privKey,
 		&commPrivKey.PublicKey,
 	)
