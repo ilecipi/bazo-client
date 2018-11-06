@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"github.com/bazo-blockchain/bazo-miner/storage"
 	"math/big"
 	"os"
 	"strconv"
@@ -61,7 +60,7 @@ func parseAccTx(args []string) (tx protocol.Transaction, err error) {
 			return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
 		}
 
-		tx, newKey, err = protocol.ConstrAccTx(byte(header), uint64(fee), [64]byte{}, &privKey, nil, nil)
+		tx, newKey, err = protocol.ConstrAccTx(byte(header), uint64(fee), [64]byte{}, privKey, nil, nil)
 		if err != nil {
 			return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
 		}
