@@ -3,7 +3,6 @@ package client
 import (
 	"github.com/bazo-blockchain/bazo-client/network"
 	"github.com/bazo-blockchain/bazo-client/util"
-	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"log"
@@ -17,10 +16,6 @@ var (
 	logger  *log.Logger
 )
 
-const (
-	USAGE_MSG = "Usage: bazo-client [pubKey|accTx|fundsTx|configTx|stakeTx] ...\n"
-)
-
 func Init() {
 	p2p.InitLogging()
 	logger = util.InitLogger()
@@ -29,12 +24,6 @@ func Init() {
 
 func ProcessTx(args []string) {
 	switch args[0] {
-	case "accTx":
-		tx, err = parseAccTx(os.Args[2:])
-		msgType = p2p.ACCTX_BRDCST
-	case "fundsTx":
-		tx, err = parseFundsTx(os.Args[2:])
-		msgType = p2p.FUNDSTX_BRDCST
 	case "configTx":
 		tx, err = parseConfigTx(os.Args[2:])
 		msgType = p2p.CONFIGTX_BRDCST
@@ -50,31 +39,6 @@ func ProcessTx(args []string) {
 	if err := network.SendTx(util.Config.BootstrapIpport, tx, msgType); err != nil {
 		logger.Printf("%v\n", err)
 	} else {
-		logger.Printf("Transaction successfully sent to network:%v", tx)
+		logger.Printf("Transaction successfully sent to network:\nTxHash: %x%v", tx.Hash(), tx)
 	}
-}
-
-func ProcessState(filename string) {
-	privKey, err := crypto.ExtractECDSAKeyFromFile(filename)
-	if err != nil {
-		logger.Printf("%v\n%v", err, USAGE_MSG)
-		return
-	}
-
-	loadBlockHeaders()
-
-	address := crypto.GetAddressFromPubKey(&privKey.PublicKey)
-
-	logger.Printf("My address: %x\n", address)
-
-	acc, _, err := GetAccount(address)
-	if err != nil {
-		logger.Println(err)
-	} else {
-		logger.Printf(acc.String())
-	}
-}
-
-func Sync() {
-	sync()
 }

@@ -1,80 +1,16 @@
 package client
 
 import (
-	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
-	"math/big"
-	"os"
 	"strconv"
 )
 
 const (
 	ARGS_MSG = "Wrong number of arguments."
 )
-
-func parseAccTx(args []string) (tx protocol.Transaction, err error) {
-	accTxUsage := "\nUsage: bazo_client accTx <header> <fee> <root> <new>"
-
-	if len(args) != 4 {
-		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, accTxUsage))
-	}
-
-	header, err := strconv.Atoi(args[0])
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
-	}
-
-	fee, err := strconv.Atoi(args[1])
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
-	}
-
-	privKey, err := crypto.ExtractECDSAKeyFromFile(args[2])
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
-	}
-
-	if _, err = os.Stat(args[3]); !os.IsNotExist(err) {
-		return nil, errors.New(fmt.Sprintf("Output file exists.%v", accTxUsage))
-	}
-
-	if len(args[3]) == 128 {
-		var newAddress [64]byte
-		newPubInt, _ := new(big.Int).SetString(args[3], 16)
-		copy(newAddress[:], newPubInt.Bytes())
-
-		tx, _, err = protocol.ConstrAccTx(byte(header), uint64(fee), newAddress, privKey, nil, nil)
-		if err != nil {
-			return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
-		}
-	} else {
-		var newKey *ecdsa.PrivateKey
-		//Write the public key to the given textfile
-		file, err := os.Create(args[3])
-		if err != nil {
-			return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
-		}
-
-		tx, newKey, err = protocol.ConstrAccTx(byte(header), uint64(fee), [64]byte{}, privKey, nil, nil)
-		if err != nil {
-			return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
-		}
-
-		_, err = file.WriteString(string(newKey.X.Text(16)) + "\n")
-		_, err = file.WriteString(string(newKey.Y.Text(16)) + "\n")
-		_, err = file.WriteString(string(newKey.D.Text(16)) + "\n")
-
-		if err != nil {
-			return nil, errors.New(fmt.Sprintf("Failed to write key to file%v", accTxUsage))
-		}
-	}
-
-	fmt.Printf("chash: %x\n", tx.Hash())
-	return tx, nil
-}
 
 func parseConfigTx(args []string) (tx protocol.Transaction, err error) {
 	//TODO add new options
@@ -118,77 +54,6 @@ func parseConfigTx(args []string) (tx protocol.Transaction, err error) {
 	tx, err = protocol.ConstrConfigTx(byte(header), uint8(id), uint64(payload), uint64(fee), uint8(txCnt), privKey)
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, configTxUsage))
-	}
-
-	return tx, nil
-}
-
-func parseFundsTx(args []string) (tx protocol.Transaction, err error) {
-	fundsTxUsage := "\nUsage: bazo_client fundsTx <header> <amount> <fee> <txCnt> <from> <to> <multiSig>"
-
-	if len(args) != 7 {
-		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, fundsTxUsage))
-	}
-
-	header, err := strconv.Atoi(args[0])
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
-	}
-
-	amount, err := strconv.Atoi(args[1])
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
-	}
-
-	fee, err := strconv.Atoi(args[2])
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
-	}
-
-	txCnt, err := strconv.Atoi(args[3])
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
-	}
-
-	fromPrivKey, err := crypto.ExtractECDSAKeyFromFile(args[4])
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
-	}
-
-	toPubKey, err := crypto.ExtractECDSAPublicKeyFromFile(args[5])
-	if err != nil {
-		if len(args[5]) == 128 {
-			runes := []rune(args[5])
-			pub1 := string(runes[:64])
-			pub2 := string(runes[64:])
-
-			toPubKey, _ = crypto.GetPubKeyFromString(pub1, pub2)
-		} else {
-			return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
-		}
-	}
-
-	multiSigPrivKey, err := crypto.ExtractECDSAKeyFromFile(args[6])
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
-	}
-
-	fromAddress := crypto.GetAddressFromPubKey(&fromPrivKey.PublicKey)
-	toAddress := crypto.GetAddressFromPubKey(toPubKey)
-
-	tx, err = protocol.ConstrFundsTx(
-		byte(header),
-		uint64(amount),
-		uint64(fee),
-		uint32(txCnt),
-		protocol.SerializeHashContent(fromAddress),
-		protocol.SerializeHashContent(toAddress),
-		fromPrivKey,
-		multiSigPrivKey,
-		nil)
-
-	if err != nil {
-		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
 
 	return tx, nil
