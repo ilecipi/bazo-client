@@ -52,6 +52,7 @@ func AddCreateAccountCommand(app *cli.App, logger *log.Logger) {
 			cli.IntFlag {
 				Name: 	"fee",
 				Usage:	"specify the fee",
+				Value:	1,
 			},
 			cli.StringFlag {
 				Name: 	"rootkey",
