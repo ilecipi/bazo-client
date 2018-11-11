@@ -7,6 +7,27 @@ The command line interface for interacting with the Bazo blockchain implemented 
 The programming language Go (developed and tested with version >= 1.9) must be installed, the properties `$GOROOT` and `$GOPATH` must be set. 
 For more information, please check out the [official documentation](https://github.com/golang/go/wiki/SettingGOPATH).
 
+Furthermore, the `configuration.json` in the root directory of the bazo-client must be properly configured before 
+interacting with the CLI.
+
+Contents of `configuration.json`:
+```json
+{
+  "this_client": {
+    "ip": "127.0.0.1",
+    "port": "8010"
+  },
+  "bootstrap_server": {
+    "ip": "127.0.0.1",
+    "port": "8000"
+  },
+  "multisig_server": {
+    "ip": "127.0.0.1",
+    "port": "8020"
+  }
+}
+```
+
 ## Getting Started
 
 The Bazo client provides an intuitive and beginner-friendly command line interface.
@@ -52,14 +73,14 @@ bazo-client account create [command options] [arguments...]
 Options
 * `--header`: (default: 0) Set header flag
 * `--fee`: (default: 1) Set transaction fee
-* `--rootkey`: Load root's private key from this file
+* `--rootwallet`: Load root's private key from this file
 * `--file`: Save the new account's public and private key to this file
 
 Examples
 
 ```bash
-bazo-client account create --rootkey root.txt --file newaccount.txt
-bazo-client account create --rootkey root.txt --file newaccount.txt --fee 5
+bazo-client account create --rootwallet root.txt --wallet newaccount.txt
+bazo-client account create --rootwallet root.txt --wallet newaccount.txt --fee 5
 ```
 
 #### Add Account
@@ -73,12 +94,12 @@ bazo-client account add [command options] [arguments...]
 Options
 * `--header`: (default: 0) Set header flag
 * `--fee`: (default: 1) Set transaction fee
-* `--rootkey`: Load root's private key from this file
+* `--rootwallet`: Load root's private key from this file
 * `--address`: Existing account's 128 byte address
 
 ```bash
-bazo-client account create --rootkey root.txt --address b978...<120 byte omitted>...e86ba
-bazo-client account create --rootkey root.txt --address b978...<120 byte omitted>...e86ba --fee 5 
+bazo-client account create --rootwallet root.txt --address b978...<120 byte omitted>...e86ba
+bazo-client account create --rootwallet root.txt --address b978...<120 byte omitted>...e86ba --fee 5 
 ```
 
 ### Funds
@@ -95,16 +116,16 @@ Options
 * `--txcount`: The sender's current transaction counter
 * `--amount`: The amount to transfer from sender to recipient
 * `--from`: The file to load the sender's private key from
-* `--toFile`: The file to load the recipient's address from
-* `--toAddress`: Instead of passing the recipient's address by file with `--toFile`, you can also directly pass the recipient's address
-* `--multisig`: (optional) The file to load the multisig's private key from
+* `--to`: The file to load the recipient's public key from
+* `--toAddress`: Instead of passing the recipient's address by file with `--to`, you can also directly pass the recipient's address with this option
+* `--multisig`: (optional) The file to load the multisig's private key from.
 
 Examples
 
 ```bash
-bazo-client funds --from myaccount.txt --txcount 0 --toFile recipient.txt --amount 100
-bazo-client funds --from myaccount.txt --txcount 1 --toFile recipient.txt --amount 100 --multisig multisig.txt
-bazo-client funds --from myaccount.txt --txcount 2 --toAddress b978...<120 byte omitted>...e86ba --amount 100 --fee 15
+bazo-client funds --from myaccount.txt --to recipient.txt --txcount 0 --amount 100
+bazo-client funds --from myaccount.txt --to recipient.txt --txcount 1 --amount 100 --multisig myaccount.txt
+bazo-client funds --from myaccount.txt --toAddress b978...<120 byte omitted>...e86ba --txcount 2 --amount 100 --fee 15
 ```
 
 ### Network
@@ -119,7 +140,7 @@ Options
 * `--header`: (default: 0) Set header flag
 * `--fee`: (default: 1) Set transaction fee
 * `--txcount`: The sender's current transaction counter
-* `--rootkey`: Load root's private key from this file
+* `--rootwallet`: Load root's private key from this file
 * `--setBlockSize`: Set the size of blocks (in bytes)
 * `--setDifficultyInterval`: Set the difficulty interval (in number of blocks) 
 * `--setMinimumFee`: Set the minimum fee (in Bazo coins)
@@ -129,11 +150,11 @@ Options
 Examples
 
 ```bash
-bazo-client network --txcount 0 --rootkey root.txt --setBlockSize 2048
-bazo-client network --txcount 1 --rootkey root.txt --setDifficultyInterval 10
-bazo-client network --txcount 2 --rootkey root.txt --setMinimumFee 10
-bazo-client network --txcount 3 --rootkey root.txt --setBlockInterval 120
-bazo-client network --txcount 4 --rootkey root.txt --setBlockReward 5
+bazo-client network --txcount 0 --rootwallet root.txt --setBlockSize 2048
+bazo-client network --txcount 1 --rootwallet root.txt --setDifficultyInterval 10
+bazo-client network --txcount 2 --rootwallet root.txt --setMinimumFee 10
+bazo-client network --txcount 3 --rootwallet root.txt --setBlockInterval 120
+bazo-client network --txcount 4 --rootwallet root.txt --setBlockReward 5
 ```
 
 Note that each setting broadcasts one `ConfigTx` to the network.
@@ -149,7 +170,7 @@ Join or leave the pool of validators by enabling or disabling staking.
 Options: 
 * `--header`: (default: 0) Set header flag
 * `--fee`: (default: 1) Set transaction fee
-* `--key`: The file to load the validator's private key from
+* `--wallet`: The file to load the validator's private key from
  
 #### Enable Staking
  
@@ -160,12 +181,12 @@ bazo-client staking enable [command options] [arguments...]
 ```
 
 Options
-* `--commitment`: The file to load the validator's commitment key from (will be created if it does not exist)
+* `--commitment`: The file to load the validator's commitment key from. A new commitment key is generated if it does not exist yet.
 
 Example
 
 ```bash
-bazo-client staking enable --key myaccount.txt --commitment commitment.txt
+bazo-client staking enable --wallet mywallet.txt --commitment commitment.txt
 ```
  
  #### Disable Staking
@@ -179,7 +200,7 @@ bazo-client staking disable [command options] [arguments...]
 Example
 
 ```bash
-bazo-client staking disable --key myaccount.txt
+bazo-client staking disable --wallet myaccount.txt
 ```
 
 ### REST 
