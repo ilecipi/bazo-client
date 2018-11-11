@@ -12,18 +12,18 @@ import (
 )
 
 type networkArgs struct {
-	header      int
-	fee         int
-	txcount     int
-	rootkeyFile string
-	optionId    uint8
-	payload     uint64
+	header      	int
+	fee         	int
+	txcount     	int
+	rootWalletFile 	string
+	optionId    	uint8
+	payload     	uint64
 }
 
 type configOption struct {
 	id				uint8
 	name			string
-	usage		string
+	usage			string
 }
 
 func GetNetworkCommand(logger *log.Logger) cli.Command {
@@ -46,12 +46,12 @@ func GetNetworkCommand(logger *log.Logger) cli.Command {
 				optionsSetByUser++
 
 				args := &networkArgs {
-					header:      c.Int("header"),
-					fee:         c.Int("fee"),
-					txcount:       c.Int("txcount"),
-					rootkeyFile: c.String("rootkey"),
-					optionId:    option.id,
-					payload:     c.Uint64(option.name),
+					header:      	c.Int("header"),
+					fee:         	c.Int("fee"),
+					txcount:       	c.Int("txcount"),
+					rootWalletFile: c.String("rootwallet"),
+					optionId:    	option.id,
+					payload:     	c.Uint64(option.name),
 				}
 
 				err := configureNetwork(args, logger)
@@ -82,7 +82,7 @@ func GetNetworkCommand(logger *log.Logger) cli.Command {
 				Usage:	"the sender's current transaction counter",
 			},
 			cli.StringFlag {
-				Name: 	"rootkey",
+				Name: 	"rootwallet",
 				Usage: 	"load root's public key from `FILE`",
 			},
 		},
@@ -102,7 +102,7 @@ func configureNetwork(args *networkArgs, logger *log.Logger) error {
 		return err
 	}
 
-	privKey, err := crypto.ExtractECDSAKeyFromFile(args.rootkeyFile)
+	privKey, err := crypto.ExtractECDSAKeyFromFile(args.rootWalletFile)
 	if err != nil {
 		return err
 	}
@@ -135,8 +135,8 @@ func (args networkArgs) ValidateInput() error {
 		return errors.New("invalid argument: txcnt must be >= 0")
 	}
 
-	if len(args.rootkeyFile) == 0 {
-		return errors.New("argument missing: rootkeyFile")
+	if len(args.rootWalletFile) == 0 {
+		return errors.New("argument missing: rootwallet")
 	}
 
 	return nil

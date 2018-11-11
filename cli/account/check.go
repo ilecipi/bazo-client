@@ -12,8 +12,8 @@ import (
 )
 
 type checkAccountArgs struct {
-	address	string
-	file	string
+	address		string
+	walletFile	string
 }
 
 func getCheckAccountCommand(logger *log.Logger) cli.Command {
@@ -23,7 +23,7 @@ func getCheckAccountCommand(logger *log.Logger) cli.Command {
 			Action: func(c *cli.Context) error {
 			args := &checkAccountArgs {
 				address:	c.String("address"),
-				file:		c.String("file"),
+				walletFile:	c.String("wallet"),
 			}
 
 			return checkAccount(args, logger)
@@ -34,9 +34,9 @@ func getCheckAccountCommand(logger *log.Logger) cli.Command {
 				Usage: 	"the account's 128 byte address",
 			},
 			cli.StringFlag {
-				Name: 	"file",
+				Name: 	"wallet",
 				Usage: 	"load the account's 128 byte address from `FILE`",
-				Value: 	"account.txt",
+				Value: 	"wallet.txt",
 			},
 		},
 	}
@@ -56,7 +56,7 @@ func checkAccount(args *checkAccountArgs, logger *log.Logger) error {
 		newPubInt, _ := new(big.Int).SetString(args.address, 16)
 		copy(address[:], newPubInt.Bytes())
 	} else {
-		privKey, err := crypto.ExtractECDSAKeyFromFile(args.file)
+		privKey, err := crypto.ExtractECDSAKeyFromFile(args.walletFile)
 		if err != nil {
 			logger.Printf("%v\n", err)
 			return err
@@ -79,11 +79,11 @@ func checkAccount(args *checkAccountArgs, logger *log.Logger) error {
 }
 
 func (args checkAccountArgs) ValidateInput() error {
-	if len(args.address) == 0 && len(args.file) == 0 {
-		return errors.New("argument missing: address or file")
+	if len(args.address) == 0 && len(args.walletFile) == 0 {
+		return errors.New("argument missing: address or wallet")
 	}
 
-	if len(args.file) == 0 && len(args.address) != 128 {
+	if len(args.walletFile) == 0 && len(args.address) != 128 {
 		return errors.New("invalid argument: address")
 	}
 

@@ -24,8 +24,8 @@ var (
 	}
 
 	rootkeyFlag = cli.StringFlag {
-		Name: 	"rootkey",
-		Usage: 	"load root's private key from `FILE`",
+		Name: 	"rootwallet",
+		Usage: 	"load root's public private key from `FILE`",
 	}
 )
 

@@ -15,8 +15,8 @@ import (
 
 type fundsArgs struct {
 	header			int
-	fromFile		string
-	toFile			string
+	fromWalletFile	string
+	toWalletFile	string
 	toAddress		string
 	multisigFile	string
 	amount			int
@@ -31,9 +31,9 @@ func GetFundsCommand(logger *log.Logger) cli.Command {
 		Action:	func(c *cli.Context) error {
 			args := &fundsArgs{
 				header: 		c.Int("header"),
-				fromFile: 		c.String("from"),
+				fromWalletFile: c.String("from"),
+				toWalletFile: 	c.String("to"),
 				toAddress: 		c.String("toAddress"),
-				toFile: 		c.String("toFile"),
 				multisigFile: 	c.String("multisig"),
 				amount: 		c.Int("amount"),
 				fee: 			c.Int("fee"),
@@ -53,12 +53,12 @@ func GetFundsCommand(logger *log.Logger) cli.Command {
 				Usage: 	"load the sender's private key from `FILE`",
 			},
 			cli.StringFlag {
-				Name: 	"toAddress",
-				Usage: 	"the recipient's 128 byze public address",
+				Name: 	"to",
+				Usage: 	"load the recipient's public key from `FILE`",
 			},
 			cli.StringFlag {
-				Name: 	"toFile",
-				Usage: 	"load the recipient's public key from `FILE`",
+				Name: 	"toAddress",
+				Usage: 	"the recipient's 128 byze public address",
 			},
 			cli.IntFlag {
 				Name: 	"amount",
@@ -75,7 +75,7 @@ func GetFundsCommand(logger *log.Logger) cli.Command {
 			},
 			cli.StringFlag {
 				Name: 	"multisig",
-				Usage: 	"load multi-signature server’s public key from `FILE`",
+				Usage: 	"load multi-signature server’s private key from `FILE`",
 			},
 		},
 	}
@@ -87,13 +87,13 @@ func sendFunds(args *fundsArgs, logger *log.Logger) error {
 		return err
 	}
 
-	fromPrivKey, err := crypto.ExtractECDSAKeyFromFile(args.fromFile)
+	fromPrivKey, err := crypto.ExtractECDSAKeyFromFile(args.fromWalletFile)
 	if err != nil {
 		return err
 	}
 
 	var toPubKey *ecdsa.PublicKey
-	if len(args.toFile) == 0 {
+	if len(args.toWalletFile) == 0 {
 		if len(args.toAddress) == 0 {
 			return errors.New(fmt.Sprintln("No recipient specified"))
 		} else {
@@ -111,7 +111,7 @@ func sendFunds(args *fundsArgs, logger *log.Logger) error {
 			}
 		}
 	} else {
-		toPubKey, err = crypto.ExtractECDSAPublicKeyFromFile(args.toFile)
+		toPubKey, err = crypto.ExtractECDSAPublicKeyFromFile(args.toWalletFile)
 		if err != nil {
 			return err
 		}
@@ -123,6 +123,8 @@ func sendFunds(args *fundsArgs, logger *log.Logger) error {
 		if err != nil {
 			return err
 		}
+	} else {
+		multisigPrivKey = fromPrivKey
 	}
 
 	fromAddress := crypto.GetAddressFromPubKey(&fromPrivKey.PublicKey)
@@ -155,22 +157,21 @@ func sendFunds(args *fundsArgs, logger *log.Logger) error {
 }
 
 func (args fundsArgs) ValidateInput() error {
-	if len(args.fromFile) == 0 {
-		return errors.New("argument missing: fromFile")
+	if len(args.fromWalletFile) == 0 {
+		return errors.New("argument missing: from")
 	}
 
-	if len(args.toFile) == 0 && len(args.toAddress) == 0 {
-		return errors.New("argument missing: toFile or toAddess")
+	if len(args.toWalletFile) == 0 && len(args.toAddress) == 0 {
+		return errors.New("argument missing: to or toAddess")
 	}
 
-	if len(args.toFile) == 0 && len(args.toAddress) != 128 {
+	if len(args.toWalletFile) == 0 && len(args.toAddress) != 128 {
 		return errors.New("invalid argument: toAddress")
 	}
 
 	if args.txcount < 0 {
 		return errors.New("invalid argument: txcnt must be >= 0")
 	}
-
 
 	if args.fee <= 0 {
 		return errors.New("invalid argument: fee must be > 0")

@@ -14,20 +14,20 @@ import (
 type createAccountArgs struct {
 	header			int
 	fee				int
-	rootkeyFile		string
-	file			string
+	rootWalletFile	string
+	walletFile		string
 }
 
 func getCreateAccountCommand(logger *log.Logger) cli.Command {
 	return cli.Command {
 		Name: "create",
-		Usage: "create a new account",
+		Usage: "create a new account and add it to the network",
 		Action: func(c *cli.Context) error {
 			args := &createAccountArgs {
 				header: 		c.Int("header"),
 				fee: 			c.Int("fee"),
-				rootkeyFile: 	c.String("rootkey"),
-				file: 			c.String("file"),
+				rootWalletFile: c.String("rootwallet"),
+				walletFile: 	c.String("wallet"),
 			}
 
 			return createAccount(args, logger)
@@ -37,8 +37,8 @@ func getCreateAccountCommand(logger *log.Logger) cli.Command {
 			feeFlag,
 			rootkeyFlag,
 			cli.StringFlag {
-				Name: 	"file",
-				Usage: 	"save new account's private key to `FILE`",
+				Name: 	"wallet",
+				Usage: 	"save new account's public private key to `FILE`",
 			},
 		},
 	}
@@ -50,14 +50,14 @@ func createAccount(args *createAccountArgs, logger *log.Logger) error {
 		return err
 	}
 
-	privKey, err := crypto.ExtractECDSAKeyFromFile(args.rootkeyFile)
+	privKey, err := crypto.ExtractECDSAKeyFromFile(args.rootWalletFile)
 	if err != nil {
 		return err
 	}
 
 	var newKey *ecdsa.PrivateKey
 	//Write the public key to the given textfile
-	file, err := os.Create(args.file)
+	file, err := os.Create(args.walletFile)
 	if err != nil {
 		return err
 	}
@@ -72,7 +72,7 @@ func createAccount(args *createAccountArgs, logger *log.Logger) error {
 	_, err = file.WriteString(string(newKey.D.Text(16)) + "\n")
 
 	if err != nil {
-		return errors.New(fmt.Sprintf("failed to write key to file %v", args.file))
+		return errors.New(fmt.Sprintf("failed to write key to file %v", args.walletFile))
 	}
 
 	return sendAccountTx(tx, logger)
@@ -83,12 +83,12 @@ func (args createAccountArgs) ValidateInput() error {
 		return errors.New("invalid argument: fee must be > 0")
 	}
 
-	if len(args.rootkeyFile) == 0 {
-		return errors.New("argument missing: rootkeyFile")
+	if len(args.rootWalletFile) == 0 {
+		return errors.New("argument missing: rootWalletFile")
 	}
 
-	if len(args.file) == 0 {
-		return errors.New("argument missing: accountFile")
+	if len(args.walletFile) == 0 {
+		return errors.New("argument missing: walletFile")
 	}
 
 	return nil

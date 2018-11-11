@@ -15,7 +15,7 @@ import (
 type stakingArgs struct {
 	header			int
 	fee				int
-	keyFile			string
+	walletFile		string
 	commitment		string
 	stakingValue	bool
 }
@@ -33,10 +33,10 @@ func GetStakingCommand(logger *log.Logger) cli.Command {
 		Value: 	1,
 	}
 
-	keyFlag := cli.StringFlag {
-		Name: 	"key, k",
+	walletFlag := cli.StringFlag {
+		Name: 	"wallet, w",
 		Usage: 	"load validator's public key from `FILE`",
-		Value: 	"key.txt",
+		Value: 	"wallet.txt",
 	}
 
 	return cli.Command {
@@ -54,7 +54,7 @@ func GetStakingCommand(logger *log.Logger) cli.Command {
 				Flags: []cli.Flag {
 					headerFlag,
 					feeFlag,
-					keyFlag,
+					walletFlag,
 					cli.StringFlag {
 						Name: 	"commitment",
 						Usage: 	"load valiadator's commitment key from `FILE`",
@@ -73,7 +73,7 @@ func GetStakingCommand(logger *log.Logger) cli.Command {
 				Flags: []cli.Flag {
 					headerFlag,
 					feeFlag,
-					keyFlag,
+					walletFlag,
 				},
 			},
 		},
@@ -84,7 +84,7 @@ func parseStakingArgs(c *cli.Context) *stakingArgs {
 	return &stakingArgs {
 		header: 			c.Int("header"),
 		fee: 				c.Int("fee"),
-		keyFile:	 		c.String("key"),
+		walletFile:	 		c.String("wallet"),
 		commitment:			c.String("commitment"),
 	}
 }
@@ -95,7 +95,7 @@ func toggleStaking(args *stakingArgs, logger *log.Logger) error {
 		return err
 	}
 
-	privKey, err := crypto.ExtractECDSAKeyFromFile(args.keyFile)
+	privKey, err := crypto.ExtractECDSAKeyFromFile(args.walletFile)
 	if err != nil {
 		return err
 	}
@@ -143,8 +143,8 @@ func (args stakingArgs) ValidateInput() error {
 		return errors.New("invalid argument: fee must be > 0")
 	}
 
-	if len(args.keyFile) == 0 {
-		return errors.New("argument missing: key")
+	if len(args.walletFile) == 0 {
+		return errors.New("argument missing: wallet")
 	}
 
 	if args.stakingValue && len(args.commitment) == 0 {

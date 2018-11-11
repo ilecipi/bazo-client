@@ -12,8 +12,8 @@ import (
 type addAccountArgs struct {
 	header			int
 	fee				int
-	rootkeyFile		string
-	address	string
+	rootWalletFile	string
+	address			string
 }
 
 func getAddAccountCommand(logger *log.Logger) cli.Command {
@@ -24,8 +24,8 @@ func getAddAccountCommand(logger *log.Logger) cli.Command {
 			args := &addAccountArgs {
 				header: 		c.Int("header"),
 				fee: 			c.Int("fee"),
-				rootkeyFile: 	c.String("rootkey"),
-				address: c.String("address"),
+				rootWalletFile: c.String("rootwallet"),
+				address: 		c.String("address"),
 			}
 
 			return addAccount(args, logger)
@@ -48,7 +48,7 @@ func addAccount(args *addAccountArgs, logger *log.Logger) error {
 		return err
 	}
 
-	privKey, err := crypto.ExtractECDSAKeyFromFile(args.rootkeyFile)
+	privKey, err := crypto.ExtractECDSAKeyFromFile(args.rootWalletFile)
 	if err != nil {
 		return err
 	}
@@ -70,16 +70,16 @@ func (args addAccountArgs) ValidateInput() error {
 		return errors.New("invalid argument: fee must be > 0")
 	}
 
-	if len(args.rootkeyFile) == 0 {
-		return errors.New("argument missing: rootkeyFile")
+	if len(args.rootWalletFile) == 0 {
+		return errors.New("argument missing: rootwallet")
 	}
 
 	if len(args.address) == 0 {
-		return errors.New("argument missing: accountAddress")
+		return errors.New("argument missing: address")
 	}
 
 	if len(args.address) != 128 {
-		return errors.New("invalid argument length: accountAddress")
+		return errors.New("invalid argument length: address")
 	}
 
 	return nil
