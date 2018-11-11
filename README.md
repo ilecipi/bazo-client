@@ -15,6 +15,10 @@ The Bazo client provides an intuitive and beginner-friendly command line interfa
 bazo-client [global options] command [command options] [arguments...]
 ```
 
+Options
+* `--help, -h`: Show help 
+* `--version, -v`: Print the version
+
 ### Accounts
 
 While everybody can check the state of accounts, only somebody in possession of the root private key can
@@ -46,8 +50,8 @@ bazo-client account create [command options] [arguments...]
 ```
 
 Options
-* `--header`: (optional, default: 0) Set header flag
-* `--fee`: (optional, default: 1) Set transaction fee
+* `--header`: (default: 0) Set header flag
+* `--fee`: (default: 1) Set transaction fee
 * `--rootkey`: Load root's private key from this file
 * `--file`: Save the new account's public and private key to this file
 
@@ -67,8 +71,8 @@ bazo-client account add [command options] [arguments...]
 ```
 
 Options
-* `--header`: (optional, default: 0) Set header flag
-* `--fee`: (optional, default: 1) Set transaction fee
+* `--header`: (default: 0) Set header flag
+* `--fee`: (default: 1) Set transaction fee
 * `--rootkey`: Load root's private key from this file
 * `--address`: Existing account's 128 byte address
 
@@ -86,8 +90,8 @@ bazo-client funds [command options] [arguments...]
 ```
 
 Options
-* `--header`: (optional, default: 0) Set header flag
-* `--fee`: (optional, default: 1) Set transaction fee
+* `--header`: (default: 0) Set header flag
+* `--fee`: (default: 1) Set transaction fee
 * `--txcount`: The sender's current transaction counter
 * `--amount`: The amount to transfer from sender to recipient
 * `--from`: The file to load the sender's private key from
@@ -112,8 +116,8 @@ bazo-client network [command options] [arguments...]
 ```
 
 Options
-* `--header`: (optional, default: 0) Set header flag
-* `--fee`: (optional, default: 1) Set transaction fee
+* `--header`: (default: 0) Set header flag
+* `--fee`: (default: 1) Set transaction fee
 * `--txcount`: The sender's current transaction counter
 * `--rootkey`: Load root's private key from this file
 * `--setBlockSize`: Set the size of blocks (in bytes)
@@ -143,11 +147,11 @@ Join or leave the pool of validators by enabling or disabling staking.
 ```
 
 Options: 
-* `--header`: (optional, default: 0) Set header flag
-* `--fee`: (optional, default: 1) Set transaction fee
+* `--header`: (default: 0) Set header flag
+* `--fee`: (default: 1) Set transaction fee
 * `--key`: The file to load the validator's private key from
  
-#### Enable
+#### Enable Staking
  
 Join the pool of validators.
  
@@ -164,7 +168,7 @@ Example
 bazo-client staking enable --key myaccount.txt --commitment commitment.txt
 ```
  
- #### Disable
+ #### Disable Staking
  
 Leave the pool of validators.
  
