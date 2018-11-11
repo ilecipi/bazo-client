@@ -1,4 +1,4 @@
-package cli
+package network
 
 import (
 	"errors"
@@ -11,13 +11,13 @@ import (
 	"log"
 )
 
-type configureNetworkArgs struct {
-	header			int
-	fee				int
-	txcnt			int
-	rootKeyFileName	string
-	optionId		uint8
-	payload			uint64
+type networkArgs struct {
+	header      int
+	fee         int
+	txcount     int
+	rootkeyFile string
+	optionId    uint8
+	payload     uint64
 }
 
 type configOption struct {
@@ -26,7 +26,7 @@ type configOption struct {
 	usage		string
 }
 
-func AddConfigureNetworkCommand(app *cli.App, logger *log.Logger) {
+func GetNetworkCommand(logger *log.Logger) cli.Command {
 	options := []configOption {
 		{ id: 1, name: "setBlockSize", usage: "set the size of blocks (in bytes)" },
 		{ id: 2, name: "setDifficultyInterval", usage: "set the difficulty interval (in number of blocks)" },
@@ -36,35 +36,37 @@ func AddConfigureNetworkCommand(app *cli.App, logger *log.Logger) {
 	}
 
 	command := cli.Command {
-		Name:	"configureNetwork",
+		Name:	"network",
 		Usage:	"configure the network",
 		Action:	func(c *cli.Context) error {
+			optionsSetByUser := 0
 			for _, option := range options {
 				if !c.IsSet(option.name) { continue }
 
-				args := &configureNetworkArgs {
-					header: 			c.Int("header"),
-					fee: 				c.Int("fee"),
-					txcnt: 				c.Int("txcnt"),
-					rootKeyFileName: 	c.String("rootkey"),
-					optionId:			option.id,
-					payload:			c.Uint64(option.name),
+				optionsSetByUser++
+
+				args := &networkArgs {
+					header:      c.Int("header"),
+					fee:         c.Int("fee"),
+					txcount:       c.Int("txcount"),
+					rootkeyFile: c.String("rootkey"),
+					optionId:    option.id,
+					payload:     c.Uint64(option.name),
 				}
 
-				err := args.ValidateInput()
-				if err != nil {
-					return err
-				}
-
-				err = configureNetwork(args, logger)
+				err := configureNetwork(args, logger)
 				if err != nil {
 					return err
 				}
 			}
 
+			if optionsSetByUser == 0 {
+				return errors.New("specify at least one configuration option")
+			}
+
 			return nil
 		},
-		Flags:	[]cli.Flag {
+		Flags: []cli.Flag {
 			cli.IntFlag {
 				Name: 	"header",
 				Usage: 	"header flag",
@@ -82,7 +84,6 @@ func AddConfigureNetworkCommand(app *cli.App, logger *log.Logger) {
 			cli.StringFlag {
 				Name: 	"rootkey",
 				Usage: 	"load root's public key from `FILE`",
-				Value: 	"key.txt",
 			},
 		},
 	}
@@ -92,16 +93,21 @@ func AddConfigureNetworkCommand(app *cli.App, logger *log.Logger) {
 		command.Flags = append(command.Flags, flag)
 	}
 
-	app.Commands = append(app.Commands, command)
+	return command
 }
 
-func configureNetwork(args *configureNetworkArgs, logger *log.Logger) error {
-	privKey, err := crypto.ExtractECDSAKeyFromFile(args.rootKeyFileName)
+func configureNetwork(args *networkArgs, logger *log.Logger) error {
+	err := args.ValidateInput()
 	if err != nil {
 		return err
 	}
 
-	tx, err := protocol.ConstrConfigTx(byte(args.header), uint8(args.optionId), uint64(args.payload), uint64(args.fee), uint8(args.txcnt), privKey)
+	privKey, err := crypto.ExtractECDSAKeyFromFile(args.rootkeyFile)
+	if err != nil {
+		return err
+	}
+
+	tx, err := protocol.ConstrConfigTx(byte(args.header), uint8(args.optionId), uint64(args.payload), uint64(args.fee), uint8(args.txcount), privKey)
 	if err != nil {
 		return err
 	}
@@ -120,17 +126,17 @@ func configureNetwork(args *configureNetworkArgs, logger *log.Logger) error {
 	return nil
 }
 
-func (args configureNetworkArgs) ValidateInput() error {
+func (args networkArgs) ValidateInput() error {
 	if args.fee <= 0 {
 		return errors.New("invalid argument: fee must be > 0")
 	}
 
-	if args.txcnt < 0 {
+	if args.txcount < 0 {
 		return errors.New("invalid argument: txcnt must be >= 0")
 	}
 
-	if len(args.rootKeyFileName) == 0 {
-		return errors.New("argument missing: rootKeyFileName")
+	if len(args.rootkeyFile) == 0 {
+		return errors.New("argument missing: rootkeyFile")
 	}
 
 	return nil

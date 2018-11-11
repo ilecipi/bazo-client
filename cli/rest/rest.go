@@ -1,4 +1,4 @@
-package cli
+package rest
 
 import (
 	"github.com/bazo-blockchain/bazo-client/REST"
@@ -8,12 +8,11 @@ import (
 	"github.com/urfave/cli"
 )
 
-func AddStartRestCommand(app *cli.App) {
-	command := cli.Command {
-		Name:	"startRestService",
+func GetRestCommand() cli.Command {
+	return cli.Command {
+		Name:	"rest",
 		Usage:	"start the REST service",
 		Action:	func(c *cli.Context) error {
-			//For querying an account state or starting the REST service, the client must establish a connection to the Bazo network.
 			network.Init()
 			cstorage.Init("client.db")
 			client.Sync()
@@ -21,6 +20,4 @@ func AddStartRestCommand(app *cli.App) {
 			return nil
 		},
 	}
-
-	app.Commands = append(app.Commands, command)
 }

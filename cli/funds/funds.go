@@ -1,4 +1,4 @@
-package cli
+package funds
 
 import (
 	"crypto/ecdsa"
@@ -13,7 +13,7 @@ import (
 	"log"
 )
 
-type sendFundsArgs struct {
+type fundsArgs struct {
 	header			int
 	fromFile		string
 	toFile			string
@@ -21,28 +21,23 @@ type sendFundsArgs struct {
 	multisigFile	string
 	amount			int
 	fee				int
-	txcnt			int
+	txcount		    int
 }
 
-func AddSendFundsCommand(app *cli.App, logger *log.Logger) {
-	command := cli.Command {
-		Name:	"sendFunds",
+func GetFundsCommand(logger *log.Logger) cli.Command {
+	return cli.Command {
+		Name:	"funds",
 		Usage:	"send funds from one account to another",
 		Action:	func(c *cli.Context) error {
-			args := &sendFundsArgs {
+			args := &fundsArgs{
 				header: 		c.Int("header"),
 				fromFile: 		c.String("from"),
-				toAddress: 		c.String("toaddress"),
-				toFile: 		c.String("tofile"),
+				toAddress: 		c.String("toAddress"),
+				toFile: 		c.String("toFile"),
 				multisigFile: 	c.String("multisig"),
 				amount: 		c.Int("amount"),
 				fee: 			c.Int("fee"),
-				txcnt: 			c.Int("txcnt"),
-			}
-
-			err := args.ValidateInput()
-			if err != nil {
-				return err
+				txcount:       	c.Int("txcount"),
 			}
 
 			return sendFunds(args, logger)
@@ -58,11 +53,11 @@ func AddSendFundsCommand(app *cli.App, logger *log.Logger) {
 				Usage: 	"load the sender's private key from `FILE`",
 			},
 			cli.StringFlag {
-				Name: 	"toaddress",
+				Name: 	"toAddress",
 				Usage: 	"the recipient's 128 byze public address",
 			},
 			cli.StringFlag {
-				Name: 	"tofile",
+				Name: 	"toFile",
 				Usage: 	"load the recipient's public key from `FILE`",
 			},
 			cli.IntFlag {
@@ -72,6 +67,7 @@ func AddSendFundsCommand(app *cli.App, logger *log.Logger) {
 			cli.IntFlag {
 				Name: 	"fee",
 				Usage:	"specify the fee",
+				Value: 	1,
 			},
 			cli.IntFlag {
 				Name: 	"txcount",
@@ -83,11 +79,14 @@ func AddSendFundsCommand(app *cli.App, logger *log.Logger) {
 			},
 		},
 	}
-
-	app.Commands = append(app.Commands, command)
 }
 
-func sendFunds(args *sendFundsArgs, logger *log.Logger) error {
+func sendFunds(args *fundsArgs, logger *log.Logger) error {
+	err := args.ValidateInput()
+	if err != nil {
+		return err
+	}
+
 	fromPrivKey, err := crypto.ExtractECDSAKeyFromFile(args.fromFile)
 	if err != nil {
 		return err
@@ -133,7 +132,7 @@ func sendFunds(args *sendFundsArgs, logger *log.Logger) error {
 		byte(args.header),
 		uint64(args.amount),
 		uint64(args.fee),
-		uint32(args.txcnt),
+		uint32(args.txcount),
 		protocol.SerializeHashContent(fromAddress),
 		protocol.SerializeHashContent(toAddress),
 		fromPrivKey,
@@ -155,7 +154,7 @@ func sendFunds(args *sendFundsArgs, logger *log.Logger) error {
 	return nil
 }
 
-func (args sendFundsArgs) ValidateInput() error {
+func (args fundsArgs) ValidateInput() error {
 	if len(args.fromFile) == 0 {
 		return errors.New("argument missing: fromFile")
 	}
@@ -168,16 +167,13 @@ func (args sendFundsArgs) ValidateInput() error {
 		return errors.New("invalid argument: toAddress")
 	}
 
-	if len(args.multisigFile) == 0 {
-		return errors.New("argument missing: multisigFile")
+	if args.txcount < 0 {
+		return errors.New("invalid argument: txcnt must be >= 0")
 	}
+
 
 	if args.fee <= 0 {
 		return errors.New("invalid argument: fee must be > 0")
-	}
-
-	if args.txcnt < 0 {
-		return errors.New("invalid argument: txcnt must be >= 0")
 	}
 
 	if args.amount <= 0 {
