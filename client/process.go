@@ -34,7 +34,7 @@ func parseAccTx(args []string) (tx protocol.Transaction, err error) {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
 	}
 
-	_, privKey, err := storage.ExtractKeyFromFile(args[2])
+	_, privKey, err := storage.ExtractECDSAKeyFromFile(args[2])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, accTxUsage))
 	}
@@ -112,7 +112,7 @@ func parseConfigTx(args []string) (tx protocol.Transaction, err error) {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, configTxUsage))
 	}
 
-	_, privKey, err := storage.ExtractKeyFromFile(args[5])
+	_, privKey, err := storage.ExtractECDSAKeyFromFile(args[5])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, configTxUsage))
 	}
@@ -152,12 +152,12 @@ func parseFundsTx(args []string) (tx protocol.Transaction, err error) {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
 
-	fromPubKey, fromPrivKey, err := storage.ExtractKeyFromFile(args[4])
+	fromPubKey, fromPrivKey, err := storage.ExtractECDSAKeyFromFile(args[4])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
 
-	toPubKey, _, err := storage.ExtractKeyFromFile(args[5])
+	toPubKey, _, err := storage.ExtractECDSAKeyFromFile(args[5])
 	if err != nil {
 		if len(args[5]) == 128 {
 			runes := []rune(args[5])
@@ -170,7 +170,7 @@ func parseFundsTx(args []string) (tx protocol.Transaction, err error) {
 		}
 	}
 
-	_, multiSigPrivKey, err := storage.ExtractKeyFromFile(args[6])
+	_, multiSigPrivKey, err := storage.ExtractECDSAKeyFromFile(args[6])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, fundsTxUsage))
 	}
@@ -187,14 +187,11 @@ func parseFundsTx(args []string) (tx protocol.Transaction, err error) {
 }
 
 func parseStakeTx(args []string) (tx protocol.Transaction, err error) {
-	stakeTxUsage := "\nUsage: bazo_client stakeTx <header> <fee> <isStaking> <account> <privKey>"
+	stakeTxUsage := "\nUsage: bazo_client stakeTx <header> <fee> <isStaking> <account> <privKey> <commitmentFile>"
 
-	var (
-		accountPubKey [64]byte
-		hashedSeed    [32]byte
-	)
+	var accountPubKey [64]byte
 
-	if len(args) != 5 {
+	if len(args) != 6 {
 		return nil, errors.New(fmt.Sprintf("%v%v", ARGS_MSG, stakeTxUsage))
 	}
 
@@ -211,19 +208,6 @@ func parseStakeTx(args []string) (tx protocol.Transaction, err error) {
 	isStaking, err := strconv.Atoi(args[2])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, stakeTxUsage))
-	}
-
-	//create new seed if node wants to stake
-	//seed file cannot be simply overwritten since in case of a rollback
-	//the validator must also be able to access an old seed
-	if isStaking != 0 {
-		//generate random seed and store it
-		seed := protocol.CreateRandomSeed()
-
-		//create the hash of the seed which will be included in the transaction
-		hashedSeed = protocol.SerializeHashContent(seed)
-
-		storage.AppendNewSeed(args[4]+"_seed.json", storage.SeedJson{fmt.Sprintf("%x", string(hashedSeed[:])), string(seed[:])})
 	}
 
 	hashFromFile, err := os.Open(args[3])
@@ -245,7 +229,12 @@ func parseStakeTx(args []string) (tx protocol.Transaction, err error) {
 	copy(accountPubKey[0:32], pub1Int.Bytes())
 	copy(accountPubKey[32:64], pub2Int.Bytes())
 
-	_, privKey, err := storage.ExtractKeyFromFile(args[4])
+	_, privKey, err := storage.ExtractECDSAKeyFromFile(args[4])
+	if err != nil {
+		return nil, errors.New(fmt.Sprintf("%v%v", err, stakeTxUsage))
+	}
+
+	commPrivKey, err := storage.ExtractRSAKeyFromFile(args[5])
 	if err != nil {
 		return nil, errors.New(fmt.Sprintf("%v%v", err, stakeTxUsage))
 	}
@@ -261,9 +250,9 @@ func parseStakeTx(args []string) (tx protocol.Transaction, err error) {
 		byte(header),
 		uint64(fee),
 		isStakingAsBool,
-		hashedSeed,
 		protocol.SerializeHashContent(accountPubKey[:]),
 		&privKey,
+		&commPrivKey,
 	)
 
 	if err != nil {
