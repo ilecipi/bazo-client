@@ -5,7 +5,7 @@
   },
   "bootstrap_server": {
     "ip": "127.0.0.1",
-    "port": "8004"
+    "port": "8000"
   },
   "multisig_server": {
     "ip": "127.0.0.1",

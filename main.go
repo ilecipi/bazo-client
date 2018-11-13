@@ -1,34 +1,40 @@
 package main
 
 import (
-	"github.com/bazo-blockchain/bazo-client/REST"
+	"github.com/bazo-blockchain/bazo-client/cli"
 	"github.com/bazo-blockchain/bazo-client/client"
 	"github.com/bazo-blockchain/bazo-client/cstorage"
 	"github.com/bazo-blockchain/bazo-client/network"
+	"github.com/bazo-blockchain/bazo-client/util"
+	"github.com/bazo-blockchain/bazo-miner/p2p"
+	cli2 "github.com/urfave/cli"
 	"os"
 )
 
 func main() {
-	client.Init()
+	p2p.InitLogging()
+	client.InitLogging()
+	logger := util.InitLogger()
+	util.Config = util.LoadConfiguration()
 
-	if len(os.Args) > 1 {
-		if os.Args[1] == "accTx" || os.Args[1] == "fundsTx" || os.Args[1] == "configTx" || os.Args[1] == "stakeTx" {
-			client.ProcessTx(os.Args[1:])
-		}
-
-		return
-	}
-
-	//For querying an account state or starting the REST service, the client must establish a connection to the Bazo network.
 	network.Init()
 	cstorage.Init("client.db")
 
-	if len(os.Args) == 2 {
-		client.ProcessState(os.Args[1])
+	app := cli2.NewApp()
 
-		return
+	app.Name = "bazo-client"
+	app.Usage = "the command line interface for interacting with the Bazo blockchain implemented in Go."
+	app.Version = "1.0.0"
+	app.Commands = []cli2.Command {
+		cli.GetAccountCommand(logger),
+		cli.GetFundsCommand(logger),
+		cli.GetNetworkCommand(logger),
+		cli.GetRestCommand(),
+		cli.GetStakingCommand(logger),
 	}
 
-	client.Sync()
-	REST.Init()
+	err := app.Run(os.Args)
+	if err != nil {
+		logger.Fatal(err)
+	}
 }

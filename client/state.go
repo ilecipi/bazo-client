@@ -21,9 +21,8 @@ var (
 )
 
 //Update allBlockHeaders to the latest header. Start listening to broadcasted headers after.
-func sync() {
+func Sync() {
 	loadBlockHeaders()
-
 	go incomingBlockHeaders()
 }
 
