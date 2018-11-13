@@ -1,4 +1,4 @@
-package staking
+package cli
 
 import (
 	"crypto/rsa"
@@ -14,7 +14,7 @@ import (
 
 type stakingArgs struct {
 	header			int
-	fee				int
+	fee				uint64
 	walletFile		string
 	commitment		string
 	stakingValue	bool
@@ -27,7 +27,7 @@ func GetStakingCommand(logger *log.Logger) cli.Command {
 		Value:	0,
 	}
 
-	feeFlag := cli.IntFlag {
+	feeFlag := cli.Uint64Flag {
 		Name: 	"fee",
 		Usage:	"specify the fee",
 		Value: 	1,
@@ -83,7 +83,7 @@ func GetStakingCommand(logger *log.Logger) cli.Command {
 func parseStakingArgs(c *cli.Context) *stakingArgs {
 	return &stakingArgs {
 		header: 			c.Int("header"),
-		fee: 				c.Int("fee"),
+		fee: 				c.Uint64("fee"),
 		walletFile:	 		c.String("wallet"),
 		commitment:			c.String("commitment"),
 	}

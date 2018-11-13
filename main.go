@@ -1,12 +1,10 @@
 package main
 
 import (
-	"github.com/bazo-blockchain/bazo-client/cli/account"
-	"github.com/bazo-blockchain/bazo-client/cli/funds"
-	"github.com/bazo-blockchain/bazo-client/cli/network"
-	"github.com/bazo-blockchain/bazo-client/cli/rest"
-	"github.com/bazo-blockchain/bazo-client/cli/staking"
+	"github.com/bazo-blockchain/bazo-client/cli"
 	"github.com/bazo-blockchain/bazo-client/client"
+	"github.com/bazo-blockchain/bazo-client/cstorage"
+	"github.com/bazo-blockchain/bazo-client/network"
 	"github.com/bazo-blockchain/bazo-client/util"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	cli2 "github.com/urfave/cli"
@@ -19,17 +17,20 @@ func main() {
 	logger := util.InitLogger()
 	util.Config = util.LoadConfiguration()
 
+	network.Init()
+	cstorage.Init("client.db")
+
 	app := cli2.NewApp()
 
 	app.Name = "bazo-client"
 	app.Usage = "the command line interface for interacting with the Bazo blockchain implemented in Go."
 	app.Version = "1.0.0"
 	app.Commands = []cli2.Command {
-		account.GetAccountCommand(logger),
-		funds.GetFundsCommand(logger),
-		network.GetNetworkCommand(logger),
-		rest.GetRestCommand(),
-		staking.GetStakingCommand(logger),
+		cli.GetAccountCommand(logger),
+		cli.GetFundsCommand(logger),
+		cli.GetNetworkCommand(logger),
+		cli.GetRestCommand(),
+		cli.GetStakingCommand(logger),
 	}
 
 	err := app.Run(os.Args)

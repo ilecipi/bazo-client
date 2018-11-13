@@ -1,4 +1,4 @@
-package account
+package cli
 
 import (
 	"crypto/ecdsa"
@@ -13,7 +13,7 @@ import (
 
 type createAccountArgs struct {
 	header			int
-	fee				int
+	fee				uint64
 	rootWalletFile	string
 	walletFile		string
 }
@@ -25,7 +25,7 @@ func getCreateAccountCommand(logger *log.Logger) cli.Command {
 		Action: func(c *cli.Context) error {
 			args := &createAccountArgs {
 				header: 		c.Int("header"),
-				fee: 			c.Int("fee"),
+				fee: 			c.Uint64("fee"),
 				rootWalletFile: c.String("rootwallet"),
 				walletFile: 	c.String("wallet"),
 			}

@@ -1,4 +1,4 @@
-package network
+package cli
 
 import (
 	"errors"
@@ -13,7 +13,7 @@ import (
 
 type networkArgs struct {
 	header      	int
-	fee         	int
+	fee         	uint64
 	txcount     	int
 	rootWalletFile 	string
 	optionId    	uint8
@@ -47,11 +47,11 @@ func GetNetworkCommand(logger *log.Logger) cli.Command {
 
 				args := &networkArgs {
 					header:      	c.Int("header"),
-					fee:         	c.Int("fee"),
-					txcount:       	c.Int("txcount"),
+					fee:         	c.Uint64("fee"),
 					rootWalletFile: c.String("rootwallet"),
 					optionId:    	option.id,
 					payload:     	c.Uint64(option.name),
+					txcount:		c.Int("txcount"),
 				}
 
 				err := configureNetwork(args, logger)
@@ -72,7 +72,7 @@ func GetNetworkCommand(logger *log.Logger) cli.Command {
 				Usage: 	"header flag",
 				Value:	0,
 			},
-			cli.IntFlag {
+			cli.Uint64Flag {
 				Name: 	"fee",
 				Usage:	"specify the fee",
 				Value: 	1,
@@ -107,7 +107,14 @@ func configureNetwork(args *networkArgs, logger *log.Logger) error {
 		return err
 	}
 
-	tx, err := protocol.ConstrConfigTx(byte(args.header), uint8(args.optionId), uint64(args.payload), uint64(args.fee), uint8(args.txcount), privKey)
+	tx, err := protocol.ConstrConfigTx(
+		byte(args.header),
+		uint8(args.optionId),
+		uint64(args.payload),
+		uint64(args.fee),
+		uint32(args.txcount),
+		privKey)
+
 	if err != nil {
 		return err
 	}

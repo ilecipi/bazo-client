@@ -1,4 +1,4 @@
-package account
+package cli
 
 import (
 	"errors"
@@ -11,7 +11,7 @@ import (
 
 type addAccountArgs struct {
 	header			int
-	fee				int
+	fee				uint64
 	rootWalletFile	string
 	address			string
 }
@@ -23,7 +23,7 @@ func getAddAccountCommand(logger *log.Logger) cli.Command {
 			Action: func(c *cli.Context) error {
 			args := &addAccountArgs {
 				header: 		c.Int("header"),
-				fee: 			c.Int("fee"),
+				fee: 			c.Uint64("fee"),
 				rootWalletFile: c.String("rootwallet"),
 				address: 		c.String("address"),
 			}

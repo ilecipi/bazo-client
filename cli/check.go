@@ -1,10 +1,8 @@
-package account
+package cli
 
 import (
 	"errors"
 	"github.com/bazo-blockchain/bazo-client/client"
-	"github.com/bazo-blockchain/bazo-client/cstorage"
-	"github.com/bazo-blockchain/bazo-client/network"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/urfave/cli"
 	"log"
@@ -47,9 +45,6 @@ func checkAccount(args *checkAccountArgs, logger *log.Logger) error {
 	if err != nil {
 		return err
 	}
-
-	network.Init()
-	cstorage.Init("client.db")
 
 	var address [64]byte
 	if len(args.address) == 128 {

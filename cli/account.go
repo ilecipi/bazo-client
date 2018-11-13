@@ -1,4 +1,4 @@
-package account
+package cli
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ var (
 		Value:	0,
 	}
 
-	feeFlag = cli.IntFlag {
+	feeFlag = cli.Uint64Flag {
 		Name: 	"fee",
 		Usage:	"specify the fee",
 		Value:	1,

@@ -1,4 +1,4 @@
-package funds
+package cli
 
 import (
 	"crypto/ecdsa"
@@ -19,8 +19,8 @@ type fundsArgs struct {
 	toWalletFile	string
 	toAddress		string
 	multisigFile	string
-	amount			int
-	fee				int
+	amount			uint64
+	fee				uint64
 	txcount		    int
 }
 
@@ -35,9 +35,9 @@ func GetFundsCommand(logger *log.Logger) cli.Command {
 				toWalletFile: 	c.String("to"),
 				toAddress: 		c.String("toAddress"),
 				multisigFile: 	c.String("multisig"),
-				amount: 		c.Int("amount"),
-				fee: 			c.Int("fee"),
-				txcount:       	c.Int("txcount"),
+				amount: 		c.Uint64("amount"),
+				fee: 			c.Uint64("fee"),
+				txcount:		c.Int("txcount"),
 			}
 
 			return sendFunds(args, logger)
@@ -60,11 +60,11 @@ func GetFundsCommand(logger *log.Logger) cli.Command {
 				Name: 	"toAddress",
 				Usage: 	"the recipient's 128 byze public address",
 			},
-			cli.IntFlag {
+			cli.Uint64Flag {
 				Name: 	"amount",
 				Usage:	"specify the amount to send",
 			},
-			cli.IntFlag {
+			cli.Uint64Flag {
 				Name: 	"fee",
 				Usage:	"specify the fee",
 				Value: 	1,
@@ -161,16 +161,16 @@ func (args fundsArgs) ValidateInput() error {
 		return errors.New("argument missing: from")
 	}
 
+	if args.txcount < 0 {
+		return errors.New("invalid argument: txcnt must be >= 0")
+	}
+
 	if len(args.toWalletFile) == 0 && len(args.toAddress) == 0 {
 		return errors.New("argument missing: to or toAddess")
 	}
 
 	if len(args.toWalletFile) == 0 && len(args.toAddress) != 128 {
 		return errors.New("invalid argument: toAddress")
-	}
-
-	if args.txcount < 0 {
-		return errors.New("invalid argument: txcnt must be >= 0")
 	}
 
 	if args.fee <= 0 {
