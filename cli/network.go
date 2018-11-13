@@ -112,7 +112,7 @@ func configureNetwork(args *networkArgs, logger *log.Logger) error {
 		uint8(args.optionId),
 		uint64(args.payload),
 		uint64(args.fee),
-		uint32(args.txcount),
+		uint8(args.txcount),
 		privKey)
 
 	if err != nil {
