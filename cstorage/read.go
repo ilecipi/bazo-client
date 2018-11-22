@@ -9,7 +9,7 @@ func ReadBlockHeader(hash [32]byte) (header *protocol.Block) {
 	db.View(func(tx *bolt.Tx) error {
 		b := tx.Bucket([]byte("blockheaders"))
 		encodedHeader := b.Get(hash[:])
-		header = header.DecodeHeader(encodedHeader)
+		header = header.Decode(encodedHeader)
 
 		return nil
 	})
@@ -26,7 +26,7 @@ func ReadLastBlockHeader() (header *protocol.Block) {
 		b := tx.Bucket([]byte("lastblockheader"))
 		cb := b.Cursor()
 		_, encodedHeader := cb.First()
-		header = header.DecodeHeader(encodedHeader)
+		header = header.Decode(encodedHeader)
 
 		return nil
 	})
