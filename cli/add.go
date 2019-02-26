@@ -6,7 +6,6 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/urfave/cli"
 	"log"
-	"math/big"
 )
 
 type addAccountArgs struct {
@@ -48,14 +47,13 @@ func addAccount(args *addAccountArgs, logger *log.Logger) error {
 		return err
 	}
 
-	privKey, err := crypto.ExtractECDSAKeyFromFile(args.rootWalletFile)
+	privKey, err := crypto.ExtractEDPrivKeyFromFile(args.rootWalletFile)
 	if err != nil {
 		return err
 	}
 
-	var newAddress [64]byte
-	newPubInt, _ := new(big.Int).SetString(args.address, 16)
-	copy(newAddress[:], newPubInt.Bytes())
+	var newAddress [32]byte
+	copy(newAddress[:], privKey[32:])
 
 	tx, _, err := protocol.ConstrAccTx(byte(args.header), uint64(args.fee), newAddress, privKey, nil, nil)
 	if err != nil {

@@ -102,7 +102,7 @@ func configureNetwork(args *networkArgs, logger *log.Logger) error {
 		return err
 	}
 
-	privKey, err := crypto.ExtractECDSAKeyFromFile(args.rootWalletFile)
+	privKey, err := crypto.ExtractEDPrivKeyFromFile(args.rootWalletFile)
 	if err != nil {
 		return err
 	}

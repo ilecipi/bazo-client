@@ -189,14 +189,14 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 		}
 	case p2p.FUNDSTX_BRDCST:
 		if tx := client.UnsignedFundsTx[txHash]; tx != nil {
-			if tx.Sig1 == [64]byte{} {
-				tx.Sig1 = txSign
+			if tx.Sig == [64]byte{} {
+				tx.Sig = txSign
 				err = network.SendTx(util.Config.MultisigIpport, tx, p2p.FUNDSTX_BRDCST)
 				if err != nil {
 					delete(client.UnsignedFundsTx, txHash)
 				}
 			} else {
-				tx.Sig2 = txSign
+				tx.Sig = txSign
 				err = network.SendTx(util.Config.BootstrapIpport, tx, p2p.FUNDSTX_BRDCST)
 				delete(client.UnsignedFundsTx, txHash)
 			}

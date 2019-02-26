@@ -46,18 +46,18 @@ func checkAccount(args *checkAccountArgs, logger *log.Logger) error {
 		return err
 	}
 
-	var address [64]byte
+	var address [32]byte
 	if len(args.address) == 128 {
 		newPubInt, _ := new(big.Int).SetString(args.address, 16)
 		copy(address[:], newPubInt.Bytes())
 	} else {
-		privKey, err := crypto.ExtractECDSAKeyFromFile(args.walletFile)
+		privKey, err := crypto.ExtractEDPrivKeyFromFile(args.walletFile)
 		if err != nil {
 			logger.Printf("%v\n", err)
 			return err
 		}
 
-		address = crypto.GetAddressFromPubKey(&privKey.PublicKey)
+		copy(address[:], privKey[32:])
 	}
 
 	logger.Printf("My address: %x\n", address)
@@ -77,8 +77,8 @@ func (args checkAccountArgs) ValidateInput() error {
 	if len(args.address) == 0 && len(args.walletFile) == 0 {
 		return errors.New("argument missing: address or wallet")
 	}
-
-	if len(args.walletFile) == 0 && len(args.address) != 128 {
+	//TODO: @ilecipi: check if 32 is correct
+	if len(args.walletFile) == 0 && len(args.address) != 32 {
 		return errors.New("invalid argument: address")
 	}
 

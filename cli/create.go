@@ -1,7 +1,7 @@
 package cli
 
 import (
-	"crypto/ecdsa"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-miner/crypto"
@@ -50,26 +50,25 @@ func createAccount(args *createAccountArgs, logger *log.Logger) error {
 		return err
 	}
 
-	privKey, err := crypto.ExtractECDSAKeyFromFile(args.rootWalletFile)
+	privKey, err := crypto.ExtractEDPrivKeyFromFile(args.rootWalletFile)
 	if err != nil {
 		return err
 	}
 
-	var newKey *ecdsa.PrivateKey
 	//Write the public key to the given textfile
 	file, err := os.Create(args.walletFile)
 	if err != nil {
 		return err
 	}
 
-	tx, newKey, err := protocol.ConstrAccTx(byte(args.header), uint64(args.fee), [64]byte{}, privKey, nil, nil)
+	tx, newKey, err := protocol.ConstrAccTx(byte(args.header), uint64(args.fee), [32]byte{}, privKey, nil, nil)
 	if err != nil {
 		return err
 	}
 
-	_, err = file.WriteString(string(newKey.X.Text(16)) + "\n")
-	_, err = file.WriteString(string(newKey.Y.Text(16)) + "\n")
-	_, err = file.WriteString(string(newKey.D.Text(16)) + "\n")
+	_, err = file.WriteString(hex.EncodeToString(newKey[:])+ "\n")
+	_, err = file.WriteString(hex.EncodeToString(privKey[0:32])+ "\n")
+	_, err = file.WriteString(hex.EncodeToString(privKey[32:64])+ "\n")
 
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to write key to file %v", args.walletFile))

@@ -15,12 +15,12 @@ func GetAccountEndpoint(w http.ResponseWriter, req *http.Request) {
 
 	logger.Printf("Incoming acc request for id: %v", param)
 
-	var address [64]byte
+	var address [32]byte
 	var addressHash [32]byte
 
 	pubKeyInt, _ := new(big.Int).SetString(param, 16)
 
-	if len(param) == 64 {
+	if len(param) == 32 {
 		copy(addressHash[:], pubKeyInt.Bytes())
 
 		network.AccReq(false, addressHash)

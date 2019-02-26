@@ -13,8 +13,7 @@ type FundsTxJson struct {
 	TxCnt  uint32 `json:"txCnt"`
 	From   string `json:"from"`
 	To     string `json:"to"`
-	Sig1   string `json:"sig1"`
-	Sig2   string `json:"sig2"`
+	Sig   string `json:"sig"`
 	Status string `json:"status"`
 }
 
@@ -28,8 +27,7 @@ func ConvertFundsTx(fundsTx *protocol.FundsTx, status string) (fundsTxJson *Fund
 		fundsTx.TxCnt,
 		hex.EncodeToString(fundsTx.From[:]),
 		hex.EncodeToString(fundsTx.To[:]),
-		hex.EncodeToString(fundsTx.Sig1[:]),
-		hex.EncodeToString(fundsTx.Sig2[:]),
+		hex.EncodeToString(fundsTx.Sig[:]),
 		status,
 	}
 }

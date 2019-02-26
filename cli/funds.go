@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-client/network"
@@ -10,6 +9,7 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/urfave/cli"
+	"golang.org/x/crypto/ed25519"
 	"log"
 )
 
@@ -87,58 +87,57 @@ func sendFunds(args *fundsArgs, logger *log.Logger) error {
 		return err
 	}
 
-	fromPrivKey, err := crypto.ExtractECDSAKeyFromFile(args.fromWalletFile)
+	fromPrivKey, err := crypto.ExtractEDPrivKeyFromFile(args.fromWalletFile)
 	if err != nil {
 		return err
 	}
 
-	var toPubKey *ecdsa.PublicKey
+	var toPubKey ed25519.PublicKey
 	if len(args.toWalletFile) == 0 {
 		if len(args.toAddress) == 0 {
 			return errors.New(fmt.Sprintln("No recipient specified"))
 		} else {
-			if len(args.toAddress) != 128 {
+			//TODO @ilecipi: check len
+			if len(args.toAddress) != 32 {
 				return errors.New(fmt.Sprintln("Invalid recipient address"))
 			}
 
-			runes := []rune(args.toAddress)
-			pub1 := string(runes[:64])
-			pub2 := string(runes[64:])
-
-			toPubKey, err = crypto.GetPubKeyFromString(pub1, pub2)
+			toPubKey, err = crypto.ExtractEDPublicKeyFromFile(args.toAddress)
 			if err != nil {
 				return err
 			}
 		}
 	} else {
-		toPubKey, err = crypto.ExtractECDSAPublicKeyFromFile(args.toWalletFile)
+		toPubKey, err = crypto.ExtractEDPublicKeyFromFile(args.toWalletFile)
 		if err != nil {
 			return err
 		}
 	}
 
-	var multisigPrivKey *ecdsa.PrivateKey
+	var multisigPrivKey ed25519.PrivateKey
+	//TODO @ilecipi: delete the print
+	fmt.Println(multisigPrivKey)
+
 	if len(args.multisigFile) > 0 {
-		multisigPrivKey, err = crypto.ExtractECDSAKeyFromFile(args.multisigFile)
+		multisigPrivKey, err = crypto.ExtractEDPrivKeyFromFile(args.multisigFile)
 		if err != nil {
 			return err
 		}
 	} else {
 		multisigPrivKey = fromPrivKey
 	}
-
-	fromAddress := crypto.GetAddressFromPubKey(&fromPrivKey.PublicKey)
-	toAddress := crypto.GetAddressFromPubKey(toPubKey)
+	var fromAddress [32]byte;
+	copy(fromAddress[:], fromPrivKey[32:])
+	toAddress := crypto.GetAddressFromPubKeyED(toPubKey)
 
 	tx, err := protocol.ConstrFundsTx(
 		byte(args.header),
 		uint64(args.amount),
 		uint64(args.fee),
 		uint32(args.txcount),
-		protocol.SerializeHashContent(fromAddress),
-		protocol.SerializeHashContent(toAddress),
+		fromAddress,
+		toAddress,
 		fromPrivKey,
-		multisigPrivKey,
 		nil)
 
 	if err != nil {
