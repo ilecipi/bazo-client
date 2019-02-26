@@ -135,8 +135,8 @@ func sendFunds(args *fundsArgs, logger *log.Logger) error {
 		uint64(args.amount),
 		uint64(args.fee),
 		uint32(args.txcount),
-		fromAddress,
-		toAddress,
+		protocol.SerializeHashContent(fromAddress),
+		protocol.SerializeHashContent(toAddress),
 		fromPrivKey,
 		nil)
 	if err != nil {
