@@ -139,7 +139,6 @@ func sendFunds(args *fundsArgs, logger *log.Logger) error {
 		toAddress,
 		fromPrivKey,
 		nil)
-
 	if err != nil {
 		logger.Printf("%v\n", err)
 		return err

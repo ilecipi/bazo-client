@@ -61,12 +61,12 @@ func createAccount(args *createAccountArgs, logger *log.Logger) error {
 		return err
 	}
 
-	tx, newKey, err := protocol.ConstrAccTx(byte(args.header), uint64(args.fee), [32]byte{}, privKey, nil, nil)
+	tx, _, err := protocol.ConstrAccTx(byte(args.header), uint64(args.fee), [32]byte{}, privKey, nil, nil)
 	if err != nil {
 		return err
 	}
 
-	_, err = file.WriteString(hex.EncodeToString(newKey[:])+ "\n")
+	_, err = file.WriteString(hex.EncodeToString(privKey[32:])+ "\n")
 	_, err = file.WriteString(hex.EncodeToString(privKey[0:32])+ "\n")
 	_, err = file.WriteString(hex.EncodeToString(privKey[32:64])+ "\n")
 
