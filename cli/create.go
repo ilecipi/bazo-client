@@ -61,14 +61,14 @@ func createAccount(args *createAccountArgs, logger *log.Logger) error {
 		return err
 	}
 
-	tx, _, err := protocol.ConstrAccTx(byte(args.header), uint64(args.fee), [32]byte{}, privKey, nil, nil)
+	tx, newPrivKey, err := protocol.ConstrAccTx(byte(args.header), uint64(args.fee), [32]byte{}, privKey, nil, nil)
 	if err != nil {
 		return err
 	}
 
-	_, err = file.WriteString(hex.EncodeToString(privKey[32:])+ "\n")
-	_, err = file.WriteString(hex.EncodeToString(privKey[0:32])+ "\n")
-	_, err = file.WriteString(hex.EncodeToString(privKey[32:64])+ "\n")
+	_, err = file.WriteString(hex.EncodeToString(newPrivKey[32:])+ "\n")
+	_, err = file.WriteString(hex.EncodeToString(newPrivKey[0:32])+ "\n")
+	_, err = file.WriteString(hex.EncodeToString(newPrivKey[32:64])+ "\n")
 
 	if err != nil {
 		return errors.New(fmt.Sprintf("failed to write key to file %v", args.walletFile))
