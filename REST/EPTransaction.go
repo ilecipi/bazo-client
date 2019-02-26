@@ -5,13 +5,16 @@ import (
 	"crypto/elliptic"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/bazo-blockchain/bazo-client/client"
 	"github.com/bazo-blockchain/bazo-client/network"
 	"github.com/bazo-blockchain/bazo-client/util"
+	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/gorilla/mux"
+	"golang.org/x/crypto/ed25519"
 	"math/big"
 	"net/http"
 	"strconv"
@@ -27,6 +30,18 @@ type Content struct {
 	Name   string      `json:"name,omitempty"`
 	Detail interface{} `json:"detail,omitempty"`
 }
+
+type IoTData struct {
+	DevId string `json:"DevId"`
+	PublicKey      []int    `json:"PublicKey"`
+	Data		[]int      `json:"Data"`
+	Signature      []int `json:"Signature"`
+}
+
+const(
+	PUB_KEY_LEN = 32
+	SIGNATURE_LEN = 64
+)
 
 func CreateAccTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	logger.Println("Incoming createAcc request")
@@ -225,4 +240,88 @@ func SendConfigTxEndpoint(w http.ResponseWriter, req *http.Request) {
 
 func SendFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	sendTxEndpoint(w, req, p2p.FUNDSTX_BRDCST)
+}
+
+func VerifyData(w http.ResponseWriter, req *http.Request) {
+	logger.Println("Incoming verifyIoT request")
+
+	params := mux.Vars(req)
+
+	header, _ := strconv.Atoi(params["header"])
+	txCnt, _ := strconv.Atoi(params["txCnt"])
+
+	var iotData IoTData;
+	var err error;
+	if req.Body == nil {
+		http.Error(w, "Please send a request body", 400)
+		return
+	}
+	err = json.NewDecoder(req.Body).Decode(&iotData)
+
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+
+	if len(iotData.PublicKey) != PUB_KEY_LEN || len(iotData.Signature) != SIGNATURE_LEN {
+		//TODO: response to the client
+		http.Error(w, err.Error(), 400)
+		return
+	}
+
+	publicKey := [PUB_KEY_LEN]byte{}
+	for index := range iotData.PublicKey {
+		publicKey[index] = byte(iotData.PublicKey[index])
+	}
+
+	data := make([]byte, len(iotData.Data))
+	for index := range iotData.Data {
+		data[index] = byte(iotData.Data[index])
+	}
+
+	signature := [SIGNATURE_LEN]byte{}
+	for index := range iotData.Signature {
+		signature[index] = byte(iotData.Signature[index])
+	}
+
+	fmt.Println("[PublicKey] ->\t", publicKey)
+	fmt.Println("[Data] ->\t\t", data)
+	fmt.Println("[Signature] ->\t", signature)
+	fmt.Println("[DevID] ->\t\t", iotData.DevId)
+
+	valid := ed25519.Verify(ed25519.PublicKey(publicKey[:]), data, signature[:])
+	toPublicKey,_ := crypto.ExtractEDPublicKeyFromFile("WalletA.key");
+	accToAddress := crypto.GetAddressFromPubKeyED(toPublicKey)
+	fmt.Println(toPublicKey)
+	if valid {
+		fmt.Println(valid)
+
+		IotTx := protocol.IotTx{
+			Header: byte(header),
+			TxCnt:  uint32(txCnt),
+			From:   publicKey,
+			To:     accToAddress,
+			Sig:    signature,
+			Data:   data,
+		}
+
+		txHash := IotTx.Hash()
+
+		client.SignedIotTx[txHash] = &IotTx
+		tx := client.SignedIotTx[txHash]
+		err = network.SendIotTx(util.Config.BootstrapIpport, tx, p2p.IOTTX_BRDCST)
+
+		if err == nil {
+			SendJsonResponse(w, JsonResponse{http.StatusOK, fmt.Sprintf("Transaction %x successfully sent to network.", txHash[:8]), nil})
+
+			var content []Content
+			content = append(content, Content{"TxHash", hex.EncodeToString(txHash[:])})
+			SendJsonResponse(w, JsonResponse{http.StatusOK, "FundsTx successfully created.", content})
+		}else{
+			logger.Printf("Sending IotTx failed: %v\n", err.Error())
+			SendJsonResponse(w, JsonResponse{http.StatusInternalServerError, err.Error(), nil})
+		}
+	} else {
+		return
+	}
 }
