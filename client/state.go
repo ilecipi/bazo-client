@@ -18,6 +18,8 @@ var (
 	UnsignedAccTx    = make(map[[32]byte]*protocol.AccTx)
 	UnsignedConfigTx = make(map[[32]byte]*protocol.ConfigTx)
 	UnsignedFundsTx  = make(map[[32]byte]*protocol.FundsTx)
+	UnsignedIoTTx  = make(map[[32]byte]*protocol.IotTx)
+
 	SignedIotTx = make(map[[32]byte]*protocol.IotTx)
 
 )

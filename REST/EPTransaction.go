@@ -220,6 +220,24 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 			SendJsonResponse(w, JsonResponse{http.StatusInternalServerError, fmt.Sprintf("No transaction with hash %x found to sign", txHash), nil})
 			return
 		}
+	case p2p.IOTTX_BRDCST:
+		if tx := client.UnsignedIoTTx[txHash]; tx != nil {
+			if tx.Sig == [64]byte{} {
+				tx.Sig = txSign
+				err = network.SendTx(util.Config.MultisigIpport, tx, p2p.IOTTX_BRDCST)
+				if err != nil {
+					delete(client.UnsignedFundsTx, txHash)
+				}
+			} else {
+				tx.Sig = txSign
+				err = network.SendTx(util.Config.BootstrapIpport, tx, p2p.IOTTX_BRDCST)
+				delete(client.UnsignedFundsTx, txHash)
+			}
+		} else {
+			logger.Printf("No IoT transaction with hash %x found to sign\n", txHash)
+			SendJsonResponse(w, JsonResponse{http.StatusInternalServerError, fmt.Sprintf("No transaction with hash %x found to sign", txHash), nil})
+			return
+		}
 	}
 
 	if err == nil {
@@ -242,14 +260,16 @@ func SendFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	sendTxEndpoint(w, req, p2p.FUNDSTX_BRDCST)
 }
 
-func VerifyData(w http.ResponseWriter, req *http.Request) {
-	logger.Println("Incoming verifyIoT request")
+func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
+	logger.Println("Incoming IoT transaction...")
 
 	params := mux.Vars(req)
 
 	header, _ := strconv.Atoi(params["header"])
 	txCnt, _ := strconv.Atoi(params["txCnt"])
 
+	//TODO @ilecipi get txCnt from client -> REST API call
+	txCnt = 0;
 	var iotData IoTData;
 	var err error;
 	if req.Body == nil {
@@ -269,9 +289,9 @@ func VerifyData(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	publicKey := [PUB_KEY_LEN]byte{}
+	fromPub := [PUB_KEY_LEN]byte{}
 	for index := range iotData.PublicKey {
-		publicKey[index] = byte(iotData.PublicKey[index])
+		fromPub[index] = byte(iotData.PublicKey[index])
 	}
 
 	data := make([]byte, len(iotData.Data))
@@ -284,25 +304,26 @@ func VerifyData(w http.ResponseWriter, req *http.Request) {
 		signature[index] = byte(iotData.Signature[index])
 	}
 
-	fmt.Println("[PublicKey] ->\t", publicKey)
+	fmt.Println("[PublicKey] ->\t", fromPub)
 	fmt.Println("[Data] ->\t\t", data)
 	fmt.Println("[Signature] ->\t", signature)
 	fmt.Println("[DevID] ->\t\t", iotData.DevId)
 
-	valid := ed25519.Verify(ed25519.PublicKey(publicKey[:]), data, signature[:])
-	toPublicKey,_ := crypto.ExtractEDPublicKeyFromFile("WalletA.key");
-	accToAddress := crypto.GetAddressFromPubKeyED(toPublicKey)
-	fmt.Println(toPublicKey)
+	valid := ed25519.Verify(ed25519.PublicKey(fromPub[:]), data, signature[:])
+	toPublicKey,_ := crypto.ExtractEDPublicKeyFromFile("WalletA.txt");
+	toPub := crypto.GetAddressFromPubKeyED(toPublicKey)
+
 	if valid {
 		fmt.Println(valid)
 
 		IotTx := protocol.IotTx{
 			Header: byte(header),
 			TxCnt:  uint32(txCnt),
-			From:   publicKey,
-			To:     accToAddress,
+			From:   fromPub,
+			To:     protocol.SerializeHashContent(toPub),
 			Sig:    signature,
 			Data:   data,
+
 		}
 
 		txHash := IotTx.Hash()
