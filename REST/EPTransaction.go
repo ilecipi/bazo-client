@@ -32,14 +32,29 @@ type Content struct {
 }
 
 type IoTData struct {
-	DevId string `json:"DevId"`
-	PublicKey      []int    `json:"PublicKey"`
-	Data		[]int      `json:"Data"`
-	Signature      []int `json:"Signature"`
+	DevId     string `json:"DevId"`
+	PublicKey []int  `json:"PublicKey"`
+	Data      []int  `json:"Data"`
+	Signature []int  `json:"Signature"`
 }
 
-const(
-	PUB_KEY_LEN = 32
+type AccTxIoT struct {
+	DevId     string `json:"DevId"`
+	PublicKey []int  `json:"PublicKey"`
+	Issuer    []int  `json:"Issuer"`
+}
+
+type FundsTxIoT struct {
+	DevId      string `json:"DevId"`
+	ToPubKey   []int  `json:"ToPubKey"`
+	FromPubKey []int  `json:"FromPubKey"`
+	Amount     int    `json:"Amount"`
+	Fee        int    `json:"Fee"`
+	TxCnt      int    `json:"TxCnt"`
+}
+
+const (
+	PUB_KEY_LEN   = 32
 	SIGNATURE_LEN = 64
 )
 
@@ -101,6 +116,112 @@ func CreateAccTxEndpointWithPubKey(w http.ResponseWriter, req *http.Request) {
 	SendJsonResponse(w, JsonResponse{http.StatusOK, "AccTx successfully created.", content})
 }
 
+func CreateAccTxEndpointWithPubKeyIoT(w http.ResponseWriter, req *http.Request) {
+	logger.Println("Incoming createAccIoT request")
+
+	params := mux.Vars(req)
+
+	header, _ := strconv.Atoi(params["header"])
+	fee, _ := strconv.Atoi(params["fee"])
+	//TODO @ilecipi get fee from http resp
+	fee = 10
+	tx := protocol.AccTx{
+		Header: byte(header),
+		Fee:    uint64(fee),
+	}
+
+	var accTxIoT AccTxIoT
+	var err error
+	if req.Body == nil {
+		http.Error(w, "Please send a request body", 400)
+		return
+	}
+	err = json.NewDecoder(req.Body).Decode(&accTxIoT)
+
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	if len(accTxIoT.PublicKey) != PUB_KEY_LEN || len(accTxIoT.Issuer) != 32 {
+		//TODO: response to the client
+		http.Error(w, err.Error(), 400)
+		return
+	}
+
+	toPub := [PUB_KEY_LEN]byte{}
+	for index := range accTxIoT.PublicKey {
+		toPub[index] = byte(accTxIoT.PublicKey[index])
+	}
+
+	issuer := [PUB_KEY_LEN]byte{}
+	for index := range accTxIoT.Issuer {
+		issuer[index] = byte(accTxIoT.Issuer[index])
+	}
+	copy(tx.PubKey[:], toPub[:])
+	copy(tx.Issuer[:], issuer[:])
+
+	txHash := tx.Hash()
+	client.UnsignedAccTx[txHash] = &tx
+	var content []Content
+	content = append(content, Content{"TxHash", hex.EncodeToString(txHash[:])})
+	SendJsonResponse(w, JsonResponse{http.StatusOK, "AccTx successfully created.", content})
+}
+
+func CreateFundsTxIoT(w http.ResponseWriter, req *http.Request) {
+	fmt.Println("CREATEA FUNDS IOT")
+	logger.Println("Incoming createFunds request")
+
+	params := mux.Vars(req)
+
+	var fundsTxIoT FundsTxIoT
+	var err error
+	if req.Body == nil {
+		http.Error(w, "Please send a request body", 400)
+		return
+	}
+	err = json.NewDecoder(req.Body).Decode(&fundsTxIoT)
+
+	header, _ := strconv.Atoi(params["header"])
+	tx := protocol.FundsTx{
+		Header: byte(header),
+		Fee:    uint64(fundsTxIoT.Fee),
+		Amount: uint64(fundsTxIoT.Amount),
+		TxCnt:  uint32(fundsTxIoT.TxCnt),
+	}
+
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		return
+	}
+	fmt.Println(fundsTxIoT)
+	if len(fundsTxIoT.FromPubKey) != PUB_KEY_LEN || len(fundsTxIoT.ToPubKey) != 32 {
+		//TODO: response to the client
+		http.Error(w, err.Error(), 400)
+		return
+	}
+
+	toPub := [PUB_KEY_LEN]byte{}
+	for index := range fundsTxIoT.ToPubKey {
+		toPub[index] = byte(fundsTxIoT.ToPubKey[index])
+	}
+
+	fromPubKey := [PUB_KEY_LEN]byte{}
+	for index := range fundsTxIoT.FromPubKey {
+		fromPubKey[index] = byte(fundsTxIoT.FromPubKey[index])
+	}
+	copy(tx.To[:], toPub[:])
+	copy(tx.From[:], fromPubKey[:])
+	tx.To = protocol.SerializeHashContent(tx.To)
+	tx.From = protocol.SerializeHashContent(tx.From)
+
+	txHash := tx.Hash()
+	client.UnsignedFundsTx[txHash] = &tx
+	fmt.Println(tx)
+	var content []Content
+	content = append(content, Content{"TxHash", hex.EncodeToString(txHash[:])})
+	SendJsonResponse(w, JsonResponse{http.StatusOK, "AccTx successfully created.", content})
+}
+
 func CreateConfigTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	logger.Println("Incoming createConfig request")
 
@@ -133,8 +254,8 @@ func CreateFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 
 	params := mux.Vars(req)
 
-	var fromPub [64]byte
-	var toPub [64]byte
+	var fromPub [32]byte
+	var toPub [32]byte
 
 	header, _ := strconv.Atoi(params["header"])
 	amount, _ := strconv.Atoi(params["amount"])
@@ -146,6 +267,8 @@ func CreateFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 
 	toPubInt, _ := new(big.Int).SetString(params["toPub"], 16)
 	copy(toPub[:], toPubInt.Bytes())
+	fmt.Println(fromPub)
+	fmt.Println(toPubInt)
 
 	tx := protocol.FundsTx{
 		Header: byte(header),
@@ -155,7 +278,7 @@ func CreateFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 		From:   protocol.SerializeHashContent(fromPub),
 		To:     protocol.SerializeHashContent(toPub),
 	}
-
+	fmt.Println("FUNDS", tx)
 	txHash := tx.Hash()
 	client.UnsignedFundsTx[txHash] = &tx
 	logger.Printf("New unsigned tx: %x\n", txHash)
@@ -176,11 +299,13 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 	copy(txHash[:], txHashInt.Bytes())
 	txSignInt, _ := new(big.Int).SetString(params["txSign"], 16)
 	copy(txSign[:], txSignInt.Bytes())
-
+	fmt.Println(txHash)
+	fmt.Println(txSign)
 	logger.Printf("Incoming sendTx request for tx: %x", txHash)
 
 	switch txType {
 	case p2p.ACCTX_BRDCST:
+		logger.Print("ACCTX")
 		if tx := client.UnsignedAccTx[txHash]; tx != nil {
 			tx.Sig = txSign
 			err = network.SendTx(util.Config.BootstrapIpport, tx, p2p.ACCTX_BRDCST)
@@ -192,6 +317,8 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 			return
 		}
 	case p2p.CONFIGTX_BRDCST:
+		logger.Print("CONFIGTX")
+
 		if tx := client.UnsignedConfigTx[txHash]; tx != nil {
 			tx.Sig = txSign
 			err = network.SendTx(util.Config.BootstrapIpport, tx, p2p.CONFIGTX_BRDCST)
@@ -203,10 +330,11 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 			return
 		}
 	case p2p.FUNDSTX_BRDCST:
+		logger.Print("FUNDSTX")
 		if tx := client.UnsignedFundsTx[txHash]; tx != nil {
 			if tx.Sig == [64]byte{} {
 				tx.Sig = txSign
-				err = network.SendTx(util.Config.MultisigIpport, tx, p2p.FUNDSTX_BRDCST)
+				err = network.SendTx(util.Config.BootstrapIpport, tx, p2p.FUNDSTX_BRDCST)
 				if err != nil {
 					delete(client.UnsignedFundsTx, txHash)
 				}
@@ -221,6 +349,7 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 			return
 		}
 	case p2p.IOTTX_BRDCST:
+		logger.Print("IOTTX")
 		if tx := client.UnsignedIoTTx[txHash]; tx != nil {
 			if tx.Sig == [64]byte{} {
 				tx.Sig = txSign
@@ -269,9 +398,9 @@ func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	txCnt, _ := strconv.Atoi(params["txCnt"])
 
 	//TODO @ilecipi get txCnt from client -> REST API call
-	txCnt = 0;
-	var iotData IoTData;
-	var err error;
+	txCnt = 0
+	var iotData IoTData
+	var err error
 	if req.Body == nil {
 		http.Error(w, "Please send a request body", 400)
 		return
@@ -310,7 +439,7 @@ func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	fmt.Println("[DevID] ->\t\t", iotData.DevId)
 
 	valid := ed25519.Verify(ed25519.PublicKey(fromPub[:]), data, signature[:])
-	toPublicKey,_ := crypto.ExtractEDPublicKeyFromFile("WalletA.txt");
+	toPublicKey, _ := crypto.ExtractEDPublicKeyFromFile("WalletA.txt")
 	toPub := crypto.GetAddressFromPubKeyED(toPublicKey)
 
 	if valid {
@@ -323,7 +452,6 @@ func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
 			To:     protocol.SerializeHashContent(toPub),
 			Sig:    signature,
 			Data:   data,
-
 		}
 
 		txHash := IotTx.Hash()
@@ -338,7 +466,7 @@ func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
 			var content []Content
 			content = append(content, Content{"TxHash", hex.EncodeToString(txHash[:])})
 			SendJsonResponse(w, JsonResponse{http.StatusOK, "FundsTx successfully created.", content})
-		}else{
+		} else {
 			logger.Printf("Sending IotTx failed: %v\n", err.Error())
 			SendJsonResponse(w, JsonResponse{http.StatusInternalServerError, err.Error(), nil})
 		}
