@@ -36,6 +36,7 @@ type IoTData struct {
 	PublicKey []int  `json:"PublicKey"`
 	Data      []int  `json:"Data"`
 	Signature []int  `json:"Signature"`
+	TxCnt      int    `json:"TxCnt"`
 }
 
 type AccTxIoT struct {
@@ -395,10 +396,8 @@ func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	params := mux.Vars(req)
 
 	header, _ := strconv.Atoi(params["header"])
-	txCnt, _ := strconv.Atoi(params["txCnt"])
 
 	//TODO @ilecipi get txCnt from client -> REST API call
-	txCnt = 0
 	var iotData IoTData
 	var err error
 	if req.Body == nil {
@@ -406,7 +405,8 @@ func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	err = json.NewDecoder(req.Body).Decode(&iotData)
-
+	txCnt, _ := strconv.Atoi(params["txCnt"])
+	txCnt = iotData.TxCnt
 	if err != nil {
 		http.Error(w, err.Error(), 400)
 		return
@@ -448,7 +448,7 @@ func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
 		IotTx := protocol.IotTx{
 			Header: byte(header),
 			TxCnt:  uint32(txCnt),
-			From:   fromPub,
+			From:   protocol.SerializeHashContent(fromPub),
 			To:     protocol.SerializeHashContent(toPub),
 			Sig:    signature,
 			Data:   data,
