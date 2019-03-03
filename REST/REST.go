@@ -36,6 +36,8 @@ func getEndpoints(router *mux.Router) {
 	router.HandleFunc("/createFundsTx/{header}/{amount}/{fee}/{txCnt}/{fromPub}/{toPub}", CreateFundsTxEndpoint).Methods("POST")
 	router.HandleFunc("/sendFundsTx/{txHash}/{txSign}", SendFundsTxEndpoint).Methods("POST")
 	router.HandleFunc("/verify", SendIoTTxEndpoint).Methods("POST")
+	router.HandleFunc("/createAccTxIoT", CreateAccTxEndpointWithPubKeyIoT).Methods("POST")
+	router.HandleFunc("/createFundsTxIoT", CreateFundsTxIoT).Methods("POST")
 }
 
 func SendJsonResponse(w http.ResponseWriter, resp interface{}) {
