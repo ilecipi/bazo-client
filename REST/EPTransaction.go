@@ -18,7 +18,10 @@ import (
 	"math/big"
 	"net/http"
 	"strconv"
+	"sync"
 )
+
+var mutex = &sync.Mutex{};
 
 type JsonResponse struct {
 	Code    int       `json:"code,omitempty"`
@@ -195,7 +198,6 @@ func CreateFundsTxIoT(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), 400)
 		return
 	}
-	fmt.Println(fundsTxIoT)
 	if len(fundsTxIoT.FromPubKey) != PUB_KEY_LEN || len(fundsTxIoT.ToPubKey) != PUB_KEY_LEN {
 		//TODO: response to the client
 		http.Error(w, err.Error(), 400)
@@ -217,7 +219,9 @@ func CreateFundsTxIoT(w http.ResponseWriter, req *http.Request) {
 	tx.From = protocol.SerializeHashContent(tx.From)
 
 	txHash := tx.Hash()
+	mutex.Lock()
 	client.UnsignedFundsTx[txHash] = &tx
+	mutex.Unlock()
 	var content []Content
 	content = append(content, Content{"TxHash", hex.EncodeToString(txHash[:])})
 	SendJsonResponse(w, JsonResponse{http.StatusOK, "AccTx successfully created.", content})
@@ -387,10 +391,8 @@ func SendConfigTxEndpoint(w http.ResponseWriter, req *http.Request) {
 func SendFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	sendTxEndpoint(w, req, p2p.FUNDSTX_BRDCST)
 }
-
 func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	logger.Println("Incoming IoT transaction...")
-
 	params := mux.Vars(req)
 
 	header, _ := strconv.Atoi(params["header"])
@@ -456,9 +458,11 @@ func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
 		}
 
 		txHash := IotTx.Hash()
-
+		mutex.Lock()
 		client.SignedIotTx[txHash] = &IotTx
 		tx := client.SignedIotTx[txHash]
+		mutex.Unlock()
+
 		err = network.SendIotTx(util.Config.BootstrapIpport, tx, p2p.IOTTX_BRDCST)
 
 		if err == nil {
