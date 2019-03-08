@@ -36,13 +36,15 @@ type IoTData struct {
 	PublicKey []int  `json:"PublicKey"`
 	Data      []int  `json:"Data"`
 	Signature []int  `json:"Signature"`
-	TxCnt      int    `json:"TxCnt"`
+	TxCnt     int    `json:"TxCnt"`
 }
 
 type AccTxIoT struct {
 	DevId     string `json:"DevId"`
 	PublicKey []int  `json:"PublicKey"`
 	Issuer    []int  `json:"Issuer"`
+	Fee       int    `json:"Fee"`
+	TxCnt     int    `json:"TxCnt"`
 }
 
 type FundsTxIoT struct {
@@ -123,21 +125,21 @@ func CreateAccTxEndpointWithPubKeyIoT(w http.ResponseWriter, req *http.Request) 
 	params := mux.Vars(req)
 
 	header, _ := strconv.Atoi(params["header"])
-	fee, _ := strconv.Atoi(params["fee"])
-	//TODO @ilecipi get fee from http resp
-	fee = 10
+
+	var err error
+	var accTxIoT AccTxIoT
+	err = json.NewDecoder(req.Body).Decode(&accTxIoT)
+
+	fee := accTxIoT.Fee
 	tx := protocol.AccTx{
 		Header: byte(header),
 		Fee:    uint64(fee),
 	}
 
-	var accTxIoT AccTxIoT
-	var err error
 	if req.Body == nil {
 		http.Error(w, "Please send a request body", 400)
 		return
 	}
-	err = json.NewDecoder(req.Body).Decode(&accTxIoT)
 
 	if err != nil {
 		http.Error(w, err.Error(), 400)
@@ -169,7 +171,6 @@ func CreateAccTxEndpointWithPubKeyIoT(w http.ResponseWriter, req *http.Request) 
 }
 
 func CreateFundsTxIoT(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("CREATEA FUNDS IOT")
 	logger.Println("Incoming createFunds request")
 
 	params := mux.Vars(req)
@@ -195,7 +196,7 @@ func CreateFundsTxIoT(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	fmt.Println(fundsTxIoT)
-	if len(fundsTxIoT.FromPubKey) != PUB_KEY_LEN || len(fundsTxIoT.ToPubKey) != 32 {
+	if len(fundsTxIoT.FromPubKey) != PUB_KEY_LEN || len(fundsTxIoT.ToPubKey) != PUB_KEY_LEN {
 		//TODO: response to the client
 		http.Error(w, err.Error(), 400)
 		return
@@ -217,7 +218,6 @@ func CreateFundsTxIoT(w http.ResponseWriter, req *http.Request) {
 
 	txHash := tx.Hash()
 	client.UnsignedFundsTx[txHash] = &tx
-	fmt.Println(tx)
 	var content []Content
 	content = append(content, Content{"TxHash", hex.EncodeToString(txHash[:])})
 	SendJsonResponse(w, JsonResponse{http.StatusOK, "AccTx successfully created.", content})
@@ -300,8 +300,6 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 	copy(txHash[:], txHashInt.Bytes())
 	txSignInt, _ := new(big.Int).SetString(params["txSign"], 16)
 	copy(txSign[:], txSignInt.Bytes())
-	fmt.Println(txHash)
-	fmt.Println(txSign)
 	logger.Printf("Incoming sendTx request for tx: %x", txHash)
 
 	switch txType {
@@ -397,7 +395,9 @@ func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
 
 	header, _ := strconv.Atoi(params["header"])
 
-	//TODO @ilecipi get txCnt from client -> REST API call
+	//DYNAMIC OR STATIC?
+	fee := 1
+
 	var iotData IoTData
 	var err error
 	if req.Body == nil {
@@ -405,8 +405,7 @@ func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	err = json.NewDecoder(req.Body).Decode(&iotData)
-	txCnt, _ := strconv.Atoi(params["txCnt"])
-	txCnt = iotData.TxCnt
+	txCnt := iotData.TxCnt
 	if err != nil {
 		http.Error(w, err.Error(), 400)
 		return
@@ -433,17 +432,18 @@ func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
 		signature[index] = byte(iotData.Signature[index])
 	}
 
-	fmt.Println("[PublicKey] ->\t", fromPub)
-	fmt.Println("[Data] ->\t\t", data)
-	fmt.Println("[Signature] ->\t", signature)
-	fmt.Println("[DevID] ->\t\t", iotData.DevId)
+	//fmt.Println("[PublicKey] ->\t", fromPub)
+	//fmt.Println("[Data] ->\t\t", data)
+	//fmt.Println("[Signature] ->\t", signature)
+	//fmt.Println("[DevID] ->\t\t", iotData.DevId)
 
 	valid := ed25519.Verify(ed25519.PublicKey(fromPub[:]), data, signature[:])
 	toPublicKey, _ := crypto.ExtractEDPublicKeyFromFile("WalletA.txt")
 	toPub := crypto.GetAddressFromPubKeyED(toPublicKey)
 
+	//Check the signature on the client side so that we cannot flood the network with already invalid transactions
 	if valid {
-		fmt.Println(valid)
+		//fmt.Println(valid)
 
 		IotTx := protocol.IotTx{
 			Header: byte(header),
@@ -452,6 +452,7 @@ func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
 			To:     protocol.SerializeHashContent(toPub),
 			Sig:    signature,
 			Data:   data,
+			Fee:    uint64(fee),
 		}
 
 		txHash := IotTx.Hash()
