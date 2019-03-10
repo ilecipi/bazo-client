@@ -97,7 +97,7 @@ func CreateAccTxEndpoint(w http.ResponseWriter, req *http.Request) {
 }
 
 func CreateAccTxEndpointWithPubKey(w http.ResponseWriter, req *http.Request) {
-	logger.Println("Incoming createAcc request")
+	//logger.Println("Incoming createAcc request")
 
 	params := mux.Vars(req)
 
@@ -123,7 +123,7 @@ func CreateAccTxEndpointWithPubKey(w http.ResponseWriter, req *http.Request) {
 }
 
 func CreateAccTxEndpointWithPubKeyIoT(w http.ResponseWriter, req *http.Request) {
-	logger.Println("Incoming createAccIoT request")
+	//logger.Println("Incoming createAccIoT request")
 
 	params := mux.Vars(req)
 
@@ -167,14 +167,16 @@ func CreateAccTxEndpointWithPubKeyIoT(w http.ResponseWriter, req *http.Request) 
 	copy(tx.Issuer[:], issuer[:])
 
 	txHash := tx.Hash()
+	mutex.Lock()
 	client.UnsignedAccTx[txHash] = &tx
+	mutex.Unlock()
 	var content []Content
 	content = append(content, Content{"TxHash", hex.EncodeToString(txHash[:])})
 	SendJsonResponse(w, JsonResponse{http.StatusOK, "AccTx successfully created.", content})
 }
 
 func CreateFundsTxIoT(w http.ResponseWriter, req *http.Request) {
-	logger.Println("Incoming createFunds request")
+	//logger.Println("Incoming createFunds request")
 
 	params := mux.Vars(req)
 
@@ -228,7 +230,7 @@ func CreateFundsTxIoT(w http.ResponseWriter, req *http.Request) {
 }
 
 func CreateConfigTxEndpoint(w http.ResponseWriter, req *http.Request) {
-	logger.Println("Incoming createConfig request")
+	//logger.Println("Incoming createConfig request")
 
 	params := mux.Vars(req)
 
@@ -255,7 +257,7 @@ func CreateConfigTxEndpoint(w http.ResponseWriter, req *http.Request) {
 }
 
 func CreateFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
-	logger.Println("Incoming createFunds request")
+	//logger.Println("Incoming createFunds request")
 
 	params := mux.Vars(req)
 
@@ -272,8 +274,8 @@ func CreateFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 
 	toPubInt, _ := new(big.Int).SetString(params["toPub"], 16)
 	copy(toPub[:], toPubInt.Bytes())
-	fmt.Println(fromPub)
-	fmt.Println(toPubInt)
+	//fmt.Println(fromPub)
+	//fmt.Println(toPubInt)
 
 	tx := protocol.FundsTx{
 		Header: byte(header),
@@ -283,10 +285,10 @@ func CreateFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 		From:   protocol.SerializeHashContent(fromPub),
 		To:     protocol.SerializeHashContent(toPub),
 	}
-	fmt.Println("FUNDS", tx)
+	//fmt.Println("FUNDS", tx)
 	txHash := tx.Hash()
 	client.UnsignedFundsTx[txHash] = &tx
-	logger.Printf("New unsigned tx: %x\n", txHash)
+	//logger.Printf("New unsigned tx: %x\n", txHash)
 
 	var content []Content
 	content = append(content, Content{"TxHash", hex.EncodeToString(txHash[:])})
@@ -304,11 +306,12 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 	copy(txHash[:], txHashInt.Bytes())
 	txSignInt, _ := new(big.Int).SetString(params["txSign"], 16)
 	copy(txSign[:], txSignInt.Bytes())
-	logger.Printf("Incoming sendTx request for tx: %x", txHash)
+	//logger.Printf("Incoming sendTx request for tx: %x", txHash)
 
 	switch txType {
 	case p2p.ACCTX_BRDCST:
-		logger.Print("ACCTX")
+		//logger.Print("ACCTX")
+
 		if tx := client.UnsignedAccTx[txHash]; tx != nil {
 			tx.Sig = txSign
 			err = network.SendTx(util.Config.BootstrapIpport, tx, p2p.ACCTX_BRDCST)
@@ -333,7 +336,8 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 			return
 		}
 	case p2p.FUNDSTX_BRDCST:
-		logger.Print("FUNDSTX")
+		//logger.Print("FUNDSTX")
+		mutex.Lock()
 		if tx := client.UnsignedFundsTx[txHash]; tx != nil {
 			if tx.Sig == [64]byte{} {
 				tx.Sig = txSign
@@ -347,12 +351,16 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 				delete(client.UnsignedFundsTx, txHash)
 			}
 		} else {
-			logger.Printf("No transaction with hash %x found to sign\n", txHash)
+			//logger.Printf("No transaction with hash %x found to sign\n", txHash)
 			SendJsonResponse(w, JsonResponse{http.StatusInternalServerError, fmt.Sprintf("No transaction with hash %x found to sign", txHash), nil})
+			mutex.Unlock()
+
 			return
 		}
+		mutex.Unlock()
+
 	case p2p.IOTTX_BRDCST:
-		logger.Print("IOTTX")
+		//logger.Print("IOTTX")
 		if tx := client.UnsignedIoTTx[txHash]; tx != nil {
 			if tx.Sig == [64]byte{} {
 				tx.Sig = txSign
@@ -366,16 +374,15 @@ func sendTxEndpoint(w http.ResponseWriter, req *http.Request, txType int) {
 				delete(client.UnsignedFundsTx, txHash)
 			}
 		} else {
-			logger.Printf("No IoT transaction with hash %x found to sign\n", txHash)
+			//logger.Printf("No IoT transaction with hash %x found to sign\n", txHash)
 			SendJsonResponse(w, JsonResponse{http.StatusInternalServerError, fmt.Sprintf("No transaction with hash %x found to sign", txHash), nil})
 			return
 		}
 	}
-
 	if err == nil {
 		SendJsonResponse(w, JsonResponse{http.StatusOK, fmt.Sprintf("Transaction %x successfully sent to network.", txHash[:8]), nil})
 	} else {
-		logger.Printf("Sending tx failed: %v\n", err.Error())
+		//logger.Printf("Sending tx failed: %v\n", err.Error())
 		SendJsonResponse(w, JsonResponse{http.StatusInternalServerError, err.Error(), nil})
 	}
 }
@@ -392,7 +399,7 @@ func SendFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	sendTxEndpoint(w, req, p2p.FUNDSTX_BRDCST)
 }
 func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
-	logger.Println("Incoming IoT transaction...")
+	//logger.Println("Incoming IoT transaction...")
 	params := mux.Vars(req)
 
 	header, _ := strconv.Atoi(params["header"])

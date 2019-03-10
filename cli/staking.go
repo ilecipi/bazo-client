@@ -129,10 +129,10 @@ func toggleStaking(args *stakingArgs, logger *log.Logger) error {
 	}
 
 	if err := network.SendTx(util.Config.BootstrapIpport, tx, p2p.STAKETX_BRDCST); err != nil {
-		logger.Printf("%v\n", err)
+		//logger.Printf("%v\n", err)
 		return err
 	} else {
-		logger.Printf("Transaction successfully sent to network:\nTxHash: %x%v", tx.Hash(), tx)
+		//logger.Printf("Transaction successfully sent to network:\nTxHash: %x%v", tx.Hash(), tx)
 	}
 
 	return nil
