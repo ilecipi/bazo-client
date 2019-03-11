@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"crypto/rsa"
 	"errors"
 	"github.com/bazo-blockchain/bazo-client/network"
 	"github.com/bazo-blockchain/bazo-client/util"
@@ -8,7 +9,6 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/urfave/cli"
-	"golang.org/x/crypto/ed25519"
 	"log"
 )
 
@@ -102,13 +102,13 @@ func toggleStaking(args *stakingArgs, logger *log.Logger) error {
 
 	accountPubKey := privKey[32:]
 
-	commPubKey := ed25519.PublicKey{}
+	commPubKey := &rsa.PublicKey{}
 	if args.stakingValue {
-		commPrivKey, err := crypto.ExtractSeedKeyFromFile(args.commitment)
+		commPrivKey, err := crypto.ExtractRSAKeyFromFile(args.commitment)
 		if err != nil {
 			return err
 		}
-		commPubKey = ed25519.PublicKey(commPrivKey[32:])
+		commPubKey = &commPrivKey.PublicKey
 	}
 
 	tx, err := protocol.ConstrStakeTx(
