@@ -10,10 +10,10 @@ import (
 	"github.com/bazo-blockchain/bazo-client/client"
 	"github.com/bazo-blockchain/bazo-client/network"
 	"github.com/bazo-blockchain/bazo-client/util"
-	"github.com/bazo-blockchain/bazo-miner/crypto"
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/gorilla/mux"
+	"golang.org/x/crypto/ed25519"
 	"math/big"
 	"net/http"
 	"strconv"
@@ -40,7 +40,9 @@ type IoTData struct {
 	Data      []int  `json:"Data"`
 	Signature []int  `json:"Signature"`
 	TxCnt     int    `json:"TxCnt"`
+	TxFee     int    `json:"TxFee"`
 	TxHash	  []int  `json:"TxHash"`
+	To		  []int  `json:"To"`
 }
 
 type AccTxIoT struct {
@@ -407,9 +409,6 @@ func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
 
 	header, _ := strconv.Atoi(params["header"])
 
-	//DYNAMIC OR STATIC?
-	fee := 1
-
 	var iotData IoTData
 	var err error
 	if req.Body == nil {
@@ -455,6 +454,8 @@ func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
 		txHashTmp[index] = byte(iotData.TxHash[index])
 	}
 
+	txFee := iotData.TxFee
+
 	//fmt.Println("[PublicKey] ->\t", fromPub)
 	//fmt.Println("[Data] ->\t\t", data)
 	//fmt.Println("[Signature] ->\t", signature)
@@ -462,22 +463,30 @@ func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
 
 
 
-	//Check the signature on the client side so that we cannot flood the network with already invalid transactions
-	toPublicKey, _ := crypto.ExtractEDPublicKeyFromFile("WalletA.txt")
 
-	toPub := crypto.GetAddressFromPubKeyED(toPublicKey)
+	//Check the signature on the client side so that we cannot flood the network with already invalid transactions
+	toPub := [PUB_KEY_LEN]byte{}
+	for index := range iotData.To {
+		toPub[index] = byte(iotData.To[index])
+	}
 		IotTx := protocol.IotTx{
 			Header: byte(header),
 			TxCnt:  uint32(txCnt),
-			From:   protocol.SerializeHashContent(fromPub),
-			To:     protocol.SerializeHashContent(toPub),
+			From:   protocol.SerializeHashContentIoT(fromPub),
+			To:     protocol.SerializeHashContentIoT(toPub),
 			Sig:  signature,
 			Data: data,
-			Fee:  uint64(fee),
+			Fee:  uint64(txFee),
 		}
-		fmt.Println("TO PUB->",fmt.Sprintf("%v", toPub))
 		txHash := IotTx.Hash()
-		//mutex.Lock()
+		IotTx.From = protocol.SerializeHashContent(fromPub);
+		IotTx.To = protocol.SerializeHashContent(toPub)
+		fmt.Println("HAST VERA", txHashTmp);
+		fmt.Println("HASH ", txHash)
+
+	fmt.Println(ed25519.Verify(fromPub[:],txHash[:], signature[:]))
+
+	//mutex.Lock()
 		//client.SignedIotTx[txHash] = &IotTx
 		//tx := client.SignedIotTx[txHash]
 		//mutex.Unlock()
