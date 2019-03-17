@@ -421,7 +421,7 @@ func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
 	txCnt := iotData.TxCnt
 	if err != nil {
 		http.Error(w, err.Error(), 400)
-		logger.Println("Decoder error...")
+		logger.Println("Decoder error...",err)
 
 		return
 	}
@@ -481,12 +481,8 @@ func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
 		txHash := IotTx.Hash()
 		IotTx.From = protocol.SerializeHashContent(fromPub);
 		IotTx.To = protocol.SerializeHashContent(toPub)
-		fmt.Println("HAST VERA", txHashTmp);
-		fmt.Println("HASH ", txHash)
 
-	fmt.Println(ed25519.Verify(fromPub[:],txHash[:], signature[:]))
-
-	//mutex.Lock()
+		//mutex.Lock()
 		//client.SignedIotTx[txHash] = &IotTx
 		//tx := client.SignedIotTx[txHash]
 		//mutex.Unlock()
