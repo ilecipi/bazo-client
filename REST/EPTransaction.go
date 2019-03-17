@@ -13,12 +13,10 @@ import (
 	"github.com/bazo-blockchain/bazo-miner/p2p"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
 	"github.com/gorilla/mux"
-	"golang.org/x/crypto/ed25519"
 	"math/big"
 	"net/http"
 	"strconv"
 	"sync"
-
 )
 
 var mutex = &sync.Mutex{};
