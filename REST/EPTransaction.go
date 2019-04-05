@@ -60,6 +60,10 @@ type FundsTxIoT struct {
 	TxCnt      int    `json:"TxCnt"`
 }
 
+type DataTx struct {
+	Data      []int  `json:"Data"`
+}
+
 const (
 	PUB_KEY_LEN   = 32
 	SIGNATURE_LEN = 64
@@ -287,6 +291,65 @@ func CreateFundsTxEndpoint(w http.ResponseWriter, req *http.Request) {
 		TxCnt:  uint32(txCnt),
 		From:   protocol.SerializeHashContent(fromPub),
 		To:     protocol.SerializeHashContent(toPub),
+		Data:   []byte{},
+	}
+	//fmt.Println("FUNDS", tx)
+	txHash := tx.Hash()
+	client.UnsignedFundsTx[txHash] = &tx
+	//logger.Printf("New unsigned tx: %x\n", txHash)
+
+	var content []Content
+	content = append(content, Content{"TxHash", hex.EncodeToString(txHash[:])})
+	SendJsonResponse(w, JsonResponse{http.StatusOK, "FundsTx successfully created.", content})
+}
+
+func CreateFundsWithDataTxEndpoint(w http.ResponseWriter, req *http.Request) {
+	//logger.Println("Incoming createFunds request")
+
+	params := mux.Vars(req)
+
+	var fromPub [32]byte
+	var toPub [32]byte
+	var data [32]byte
+
+
+	header, _ := strconv.Atoi(params["header"])
+	amount, _ := strconv.Atoi(params["amount"])
+	fee, _ := strconv.Atoi(params["fee"])
+	txCnt, _ := strconv.Atoi(params["txCnt"])
+
+	fromPubInt, _ := new(big.Int).SetString(params["fromPub"], 16)
+	copy(fromPub[:], fromPubInt.Bytes())
+
+	toPubInt, _ := new(big.Int).SetString(params["toPub"], 16)
+	copy(toPub[:], toPubInt.Bytes())
+
+	dataInt, _ := new(big.Int).SetString(params["data"], 16)
+	copy(data[:], dataInt.Bytes())
+
+	var err error
+	if req.Body == nil {
+		http.Error(w, "Please send a request body", 400)
+		logger.Println("No Body...")
+
+		return
+	}
+	if err != nil {
+		http.Error(w, err.Error(), 400)
+		logger.Println("Decoder error...",err)
+
+		return
+	}
+
+
+	tx := protocol.FundsTx{
+		Header: byte(header),
+		Amount: uint64(amount),
+		Fee:    uint64(fee),
+		TxCnt:  uint32(txCnt),
+		From:   protocol.SerializeHashContent(fromPub),
+		To:     protocol.SerializeHashContent(toPub),
+		Data:   data[:],
 	}
 	//fmt.Println("FUNDS", tx)
 	txHash := tx.Hash()
@@ -470,15 +533,15 @@ func SendIoTTxEndpoint(w http.ResponseWriter, req *http.Request) {
 		IotTx := protocol.IotTx{
 			Header: byte(header),
 			TxCnt:  uint32(txCnt),
-			From:   protocol.SerializeHashContentIoT(fromPub),
-			To:     protocol.SerializeHashContentIoT(toPub),
+			From:   protocol.SerializeHashContent(fromPub),
+			To:     protocol.SerializeHashContent(toPub),
 			Sig:  signature,
 			Data: data,
 			Fee:  uint64(txFee),
 		}
 		txHash := IotTx.Hash()
-		IotTx.From = protocol.SerializeHashContent(fromPub);
-		IotTx.To = protocol.SerializeHashContent(toPub)
+		//IotTx.From = protocol.SerializeHashContent(fromPub);
+		//IotTx.To = protocol.SerializeHashContent(toPub)
 
 		//mutex.Lock()
 		//client.SignedIotTx[txHash] = &IotTx

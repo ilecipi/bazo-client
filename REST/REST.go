@@ -34,6 +34,8 @@ func getEndpoints(router *mux.Router) {
 	router.HandleFunc("/sendConfigTx/{txHash}/{txSign}", SendConfigTxEndpoint).Methods("POST")
 
 	router.HandleFunc("/createFundsTx/{header}/{amount}/{fee}/{txCnt}/{fromPub}/{toPub}", CreateFundsTxEndpoint).Methods("POST")
+	router.HandleFunc("/createFundsTxWithData/{header}/{amount}/{fee}/{txCnt}/{data}/{fromPub}/{toPub}", CreateFundsWithDataTxEndpoint).Methods("POST")
+
 	router.HandleFunc("/sendFundsTx/{txHash}/{txSign}", SendFundsTxEndpoint).Methods("POST")
 	router.HandleFunc("/sendTxIoT", SendIoTTxEndpoint).Methods("POST")
 	router.HandleFunc("/createAccTxIoT", CreateAccTxEndpointWithPubKeyIoT).Methods("POST")

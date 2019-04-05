@@ -1,0 +1,70 @@
+INFO: 2019/03/19 18:23:53.296275 utils.go:20: Connection to 127.0.0.1:8020 failed.
+INFO: 2019/03/19 18:24:14.383809 utils.go:20: Connection to 127.0.0.1:8020 failed.
+INFO: 2019/03/19 18:27:08.817677 utils.go:20: Connection to 127.0.0.1:8020 failed.
+INFO: 2019/03/19 18:27:26.568897 utils.go:20: Connection to 127.0.0.1:8020 failed.
+INFO: 2019/03/19 18:27:46.734215 utils.go:20: Connection to 127.0.0.1:8020 failed.
+INFO: 2019/03/19 18:28:03.662773 utils.go:20: Connection to 127.0.0.1:8020 failed.
+INFO: 2019/03/19 18:28:15.213607 utils.go:20: Connection to 127.0.0.1:8020 failed.
+INFO: 2019/03/19 18:29:23.619170 utils.go:20: Connection to 127.0.0.1:8020 failed.
+INFO: 2019/03/19 18:29:48.537981 utils.go:20: Connection to 127.0.0.1:8020 failed.
+INFO: 2019/03/19 18:30:05.950052 utils.go:20: Connection to 127.0.0.1:8020 failed.
+INFO: 2019/03/19 20:54:50.261874 utils.go:20: Connection to 127.0.0.1:8020 failed.
+INFO: 2019/03/19 20:54:59.575077 utils.go:20: Connection to 127.0.0.1:8020 failed.
+INFO: 2019/03/20 17:35:17.196303 utils.go:20: Connection to 127.0.0.1:8020 failed.
+INFO: 2019/03/20 17:38:10.775159 utils.go:20: Connection to 127.0.0.1:8020 failed.
+INFO: 2019/03/22 19:27:28.211297 utils.go:20: Connection to 127.0.0.1:8020 failed.
+INFO: 2019/03/22 19:29:29.872428 utils.go:20: Connection to 127.0.0.1:8020 failed.
+INFO: 2019/03/22 19:49:54.837839 utils.go:20: Connection to 127.0.0.1:8020 failed.
+INFO: 2019/03/22 19:51:20.767277 utils.go:20: Connection to 127.0.0.1:8020 failed.
+INFO: 2019/03/22 19:52:14.627121 utils.go:20: Connection to 127.0.0.1:8020 failed.
+2019/03/23 12:46:08 http: panic serving 127.0.0.1:55299: runtime error: invalid memory address or nil pointer dereference
+goroutine 3 [running]:
+net/http.(*conn).serve.func1(0xc0001ffb80)
+	/usr/local/Cellar/go/1.12/libexec/src/net/http/server.go:1769 +0xc9
+panic(0x143d880, 0x184d9d0)
+	/usr/local/Cellar/go/1.12/libexec/src/runtime/panic.go:522 +0x1b5
+math/big.(*Int).Bytes(...)
+	/usr/local/Cellar/go/1.12/libexec/src/math/big/int.go:441
+github.com/bazo-blockchain/bazo-client/REST.sendTxEndpoint(0x15521e0, 0xc0001e81c0, 0xc00018e600, 0x1)
+	/Users/ilecipi/go/src/github.com/bazo-blockchain/bazo-client/REST/EPTransaction.go:374 +0x313
+github.com/bazo-blockchain/bazo-client/REST.SendFundsTxEndpoint(0x15521e0, 0xc0001e81c0, 0xc00018e600)
+	/Users/ilecipi/go/src/github.com/bazo-blockchain/bazo-client/REST/EPTransaction.go:465 +0x48
+net/http.HandlerFunc.ServeHTTP(0x14cefb0, 0x15521e0, 0xc0001e81c0, 0xc00018e600)
+	/usr/local/Cellar/go/1.12/libexec/src/net/http/server.go:1995 +0x44
+github.com/gorilla/mux.(*Router).ServeHTTP(0xc0001f4000, 0x15521e0, 0xc0001e81c0, 0xc00018e600)
+	/Users/ilecipi/go/src/github.com/gorilla/mux/mux.go:162 +0xec
+github.com/gorilla/handlers.(*cors).ServeHTTP(0xc000239200, 0x15521e0, 0xc0001e81c0, 0xc00018e400)
+	/Users/ilecipi/go/src/github.com/gorilla/handlers/cors.go:54 +0x1081
+net/http.serverHandler.ServeHTTP(0xc000258000, 0x15521e0, 0xc0001e81c0, 0xc00018e400)
+	/usr/local/Cellar/go/1.12/libexec/src/net/http/server.go:2774 +0xab
+net/http.(*conn).serve(0xc0001ffb80, 0x15531a0, 0xc000126940)
+	/usr/local/Cellar/go/1.12/libexec/src/net/http/server.go:1878 +0x84c
+created by net/http.(*Server).Serve
+	/usr/local/Cellar/go/1.12/libexec/src/net/http/server.go:2884 +0x2f4
+2019/03/23 12:46:08 http: panic serving 127.0.0.1:55300: runtime error: invalid memory address or nil pointer dereference
+goroutine 5 [running]:
+net/http.(*conn).serve.func1(0xc0001ffc20)
+	/usr/local/Cellar/go/1.12/libexec/src/net/http/server.go:1769 +0xc9
+panic(0x143d880, 0x184d9d0)
+	/usr/local/Cellar/go/1.12/libexec/src/runtime/panic.go:522 +0x1b5
+math/big.(*Int).Bytes(...)
+	/usr/local/Cellar/go/1.12/libexec/src/math/big/int.go:441
+github.com/bazo-blockchain/bazo-client/REST.sendTxEndpoint(0x15521e0, 0xc00027c0e0, 0xc0002a0200, 0x1)
+	/Users/ilecipi/go/src/github.com/bazo-blockchain/bazo-client/REST/EPTransaction.go:374 +0x313
+github.com/bazo-blockchain/bazo-client/REST.SendFundsTxEndpoint(0x15521e0, 0xc00027c0e0, 0xc0002a0200)
+	/Users/ilecipi/go/src/github.com/bazo-blockchain/bazo-client/REST/EPTransaction.go:465 +0x48
+net/http.HandlerFunc.ServeHTTP(0x14cefb0, 0x15521e0, 0xc00027c0e0, 0xc0002a0200)
+	/usr/local/Cellar/go/1.12/libexec/src/net/http/server.go:1995 +0x44
+github.com/gorilla/mux.(*Router).ServeHTTP(0xc0001f4000, 0x15521e0, 0xc00027c0e0, 0xc0002a0200)
+	/Users/ilecipi/go/src/github.com/gorilla/mux/mux.go:162 +0xec
+github.com/gorilla/handlers.(*cors).ServeHTTP(0xc000239200, 0x15521e0, 0xc00027c0e0, 0xc00018e700)
+	/Users/ilecipi/go/src/github.com/gorilla/handlers/cors.go:54 +0x1081
+net/http.serverHandler.ServeHTTP(0xc000258000, 0x15521e0, 0xc00027c0e0, 0xc00018e700)
+	/usr/local/Cellar/go/1.12/libexec/src/net/http/server.go:2774 +0xab
+net/http.(*conn).serve(0xc0001ffc20, 0x15531a0, 0xc0001ea6c0)
+	/usr/local/Cellar/go/1.12/libexec/src/net/http/server.go:1878 +0x84c
+created by net/http.(*Server).Serve
+	/usr/local/Cellar/go/1.12/libexec/src/net/http/server.go:2884 +0x2f4
+INFO: 2019/03/24 15:15:30.078052 utils.go:20: Connection to 127.0.0.1:8000 failed.
+INFO: 2019/03/26 17:53:39.930345 utils.go:20: Connection to 127.0.0.1:8020 failed.
+INFO: 2019/03/26 18:20:28.623988 utils.go:20: Connection to 127.0.0.1:8020 failed.
