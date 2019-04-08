@@ -1,7 +1,6 @@
 package REST
 
 import (
-	"fmt"
 	"github.com/bazo-blockchain/bazo-client/client"
 	"github.com/bazo-blockchain/bazo-client/network"
 	"github.com/bazo-blockchain/bazo-miner/protocol"
@@ -20,7 +19,6 @@ func GetAccountEndpoint(w http.ResponseWriter, req *http.Request) {
 	var addressHash [32]byte
 
 	pubKeyInt, _ := new(big.Int).SetString(param, 16)
-	fmt.Println(param)
 	if len(param) == 64 {
 		copy(addressHash[:], pubKeyInt.Bytes())
 
@@ -35,7 +33,6 @@ func GetAccountEndpoint(w http.ResponseWriter, req *http.Request) {
 		addressHash = protocol.SerializeHashContent(address)
 	}
 	acc, lastTenTx, err := client.GetAccount(addressHash)
-	fmt.Println(acc, lastTenTx)
 	if err != nil {
 		SendJsonResponse(w, JsonResponse{http.StatusInternalServerError, err.Error(), nil})
 	} else {

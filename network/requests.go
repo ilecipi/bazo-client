@@ -99,7 +99,7 @@ func SendIotTx(dial string, tx protocol.Iot, typeID uint8) (err error) {
 }
 
 func NonVerifiedTxReq(addressHash [32]byte) (nonVerifiedTxs []*protocol.FundsTx) {
-	if conn := p2p.Connect(util.Config.MultisigIpport); conn != nil {
+	if conn := p2p.Connect(util.Config.BootstrapIpport); conn != nil {
 		packet := p2p.BuildPacket(p2p.FUNDSTX_REQ, addressHash[:])
 		conn.Write(packet)
 
